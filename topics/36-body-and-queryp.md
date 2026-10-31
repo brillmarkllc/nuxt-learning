@@ -2,94 +2,62 @@
 
 Course section: 3: The server
 
-## What you will learn
+A **query string** carries values in the address, such as `/api/search?name=Asha`. A **request body** carries submitted content separately from the address, such as the fields in a POST request.
 
-Read submitted payloads and URL query values.
+Use query values for searches and filters. Use a body for submitted records. Both are visitor input and need checks.
 
-In this lesson, **Request body** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Request body:** Data sent inside an HTTP request, often used for form submissions.
-- **Query string:** Optional URL values after ?, such as ?page=2&sort=name.
-- **POST:** An HTTP method commonly used to create a resource or submit an action.
-- **$fetch:** Nuxt’s HTTP request helper, useful inside server handlers and user-triggered actions.
-- **await:** JavaScript syntax that waits for a promise to settle inside a supported context.
-
-## What this topic includes
-
-Server examples are independent handlers. Page snippets belong in script setup; connect the named function to a button or form.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. ReadBody
-
-readBody reads the JSON body supplied by a POST request.
-
-**Where:** server/api/echo.post.js
+**Additional example:** Create `server/api/search.get.js`:
 
 ```js
-export default defineEventHandler(async event => {
-  const body = await readBody(event)
-  return { received: body }
-})
-```
-
-### 2. GetQuery
-
-getQuery reads URL values: /api/search?name=Ada returns the name value.
-
-**Where:** server/api/search.get.js
-
-```js
-export default defineEventHandler(event => {
+export default defineEventHandler((event) => {
   const query = getQuery(event)
-  return { name: typeof query.name === 'string' ? query.name : '' }
+  const name = typeof query.name === 'string' ? query.name.trim() : ''
+  return { searchedFor: name }
 })
 ```
 
-### 3. POST requests
+Visit `/api/search?name=Asha`. The response should contain `"searchedFor":"Asha"`. `typeof` checks that the value is text; repeated query fields can produce another shape, so this example falls back to empty text.
 
-curl sends JSON in a POST body to the echo endpoint above.
-
-**Where:** Terminal
-
-```sh
-curl http://localhost:3000/api/echo -X POST -H 'Content-Type: application/json' -d '{"name":"Ada"}'
-```
-
-### 4. $fetch in event handlers
-
-Call $fetch inside a click handler rather than creating a new useFetch instance on every click.
-
-**Where:** A page — script setup
+The POST handler from topic 33 uses:
 
 ```js
-const result = ref(null)
-async function sendExample() {
-  result.value = await $fetch('/api/echo', { method: 'POST', body: { name: 'Ada' } })
-}
+const body = await readBody(event)
 ```
-## Simple example
 
-An API handler reads `await readBody(event)` and `getQuery(event)`.
+That line belongs inside an asynchronous server handler. Reading a body is not the same as validating its fields, and GET handlers should use query values instead of `readBody`.
 
-## Remember
+## Send a body from a page
 
-- Body fields and query parameters are separate input channels and both need validation.
+Create `app/pages/send-message.vue`:
 
-## Best practices and edge cases
+```vue
+<script setup>
+const message = ref('')
+async function send() {
+  try {
+    const result = await $fetch('/api/message', {
+      method: 'POST', body: { message: 'Hello, bookshop' }
+    })
+    message.value = result.received.message
+  } catch {
+    message.value = 'The message could not be sent.'
+  }
+}
+</script>
 
-- Use useFetch for an HTTP resource or useAsyncData with a custom fetcher during setup. Their payload integration avoids repeating the initial request during hydration.
-- Use $fetch for user-triggered mutations such as submitting a form, then refresh the affected list after success.
-- Pass a getter or computed URL when a request depends on a route parameter. Handle pending, error, empty, and successful results separately.
-- Calls sharing a data key share state. Keep their important options consistent and avoid keys that mix results from different users.
-- During SSR, relative useFetch requests can forward request context; a plain server-side $fetch does not automatically forward the browser’s cookies.
+<template>
+  <main>
+    <button @click="send">Send example</button>
+    <p aria-live="polite">{{ message }}</p>
+  </main>
+</template>
+```
+
+With `server/api/message.post.js` from topic 33 present, open `/send-message` and click the button. “Hello, bookshop” should appear. `$fetch` encodes the object as JSON and reads the JSON response for you.
 
 ## Official documentation
 
-- [Nuxt 4: Data Fetching](https://nuxt.com/docs/4.x/getting-started/data-fetching)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Server — body and query handling](https://nuxt.com/docs/4.x/directory-structure/server)
+- [Nuxt 4: Data fetching — $fetch](https://nuxt.com/docs/4.x/getting-started/data-fetching#fetch)
 
 [Back to course index](00-course-index.md)

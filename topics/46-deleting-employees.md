@@ -2,99 +2,68 @@
 
 Course section: 3: The server
 
-## What you will learn
+A **DELETE** request asks the server to remove a record. Wait for the server to confirm success before leaving the page or hiding the item.
 
-Remove an employee through an API request.
-
-In this lesson, **DELETE** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **DELETE:** An HTTP method used to request removal of a resource.
-- **Endpoint:** A URL and HTTP method that a server handles, such as POST /api/events.
-- **Record:** One stored item, such as an employee or event.
-- **HTTP status:** A response number describing an outcome, such as 200 for success or 404 for missing content.
-
-## What this topic includes
-
-Use the JSON Server setup and employeeApiBase setting from lesson 34. These are local practice CRUD endpoints, without production authentication.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. DELETE endpoint
-
-Validate the target ID, await the upstream deletion, and return an explicit result.
-
-**Where:** server/api/employees/[id].delete.js
+**Additional working example:** Create `server/api/employees/[id].delete.js`:
 
 ```js
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event) => {
   const id = getRouterParam(event, 'id')
-  if (!id || !/^\d+$/.test(id)) throw createError({ statusCode: 400, statusMessage: 'Invalid ID' })
+  if (!id || !/^\d+$/.test(id)) {
+    throw createError({ status: 400, statusText: 'Invalid employee ID' })
+  }
   const config = useRuntimeConfig(event)
-  await $fetch(`${config.employeeApiBase}/employees/${id}`, { method: 'DELETE' })
+  try {
+    await $fetch(`${config.employeeApiBase}/employees/${id}`, { method: 'DELETE' })
+  } catch (error) {
+    const missing = error.response?.status === 404
+    throw createError({ status: missing ? 404 : 502,
+      statusText: missing ? 'Employee not found' : 'Employee service unavailable' })
+  }
   return { deleted: true }
 })
 ```
 
-### 2. ID input
-
-URL-encode an ID before interpolating it into a request path; the server validates it too.
-
-**Where:** A page — script setup
+In the detail page `app/pages/employees/[id]/index.vue`, add the following to its existing script:
 
 ```js
-async function removeById(id) {
-  return await $fetch(`/api/employees/${encodeURIComponent(String(id))}`, { method: 'DELETE' })
+const deleting = ref(false)
+const deleteMessage = ref('')
+async function removeEmployee() {
+  if (deleting.value || !employee.value) return
+  if (!window.confirm(`Delete ${employee.value.name}?`)) return
+  deleting.value = true
+  deleteMessage.value = ''
+  try {
+    await $fetch(`/api/employees/${encodeURIComponent(String(employee.value.id))}`, {
+      method: 'DELETE'
+    })
+    await navigateTo('/employees')
+  } catch {
+    deleteMessage.value = 'Could not delete this employee. Please retry.'
+  } finally {
+    deleting.value = false
+  }
 }
 ```
 
-### 3. Error handling
+Add this inside the loaded employee's `<article>`:
 
-Failed deletions keep the user on the page with a retry message.
-
-**Where:** A page — script setup
-
-```js
-const errorMessage = ref('')
-async function removeEmployee(id) {
-  try { await $fetch(`/api/employees/${encodeURIComponent(String(id))}`, { method: 'DELETE' }) }
-  catch { errorMessage.value = 'Deletion failed. Please try again.' }
-}
+```vue
+<button :disabled="deleting" @click="removeEmployee">Delete employee</button>
+<p role="status">{{ deleteMessage }}</p>
 ```
 
-### 4. Navigation
+Create a disposable fictional employee using topic 37, open its detail page, and delete it. Confirm that it disappears from the list after Reload and from `db.json`. Try cancelling first: no request should be sent.
 
-Navigate only after deletion succeeds. Call this from a clearly labeled Delete button.
+`window.confirm` is used only inside a browser click handler, so it is not executed during server rendering. Disabling the button prevents repeated clicks while the request is running.
 
-**Where:** A page — script setup
-
-```js
-async function removeAndLeave(id) {
-  await $fetch(`/api/employees/${encodeURIComponent(String(id))}`, { method: 'DELETE' })
-  await navigateTo('/employees')
-}
-```
-## Simple example
-
-Delete a selected employee, then return to the list after success.
-
-## Remember
-
-- Deletion changes stored data; show clear intent and handle failures.
-
-## Best practices and edge cases
-
-- Use useFetch for an HTTP resource or useAsyncData with a custom fetcher during setup. Their payload integration avoids repeating the initial request during hydration.
-- Use $fetch for user-triggered mutations such as submitting a form, then refresh the affected list after success.
-- Pass a getter or computed URL when a request depends on a route parameter. Handle pending, error, empty, and successful results separately.
-- Calls sharing a data key share state. Keep their important options consistent and avoid keys that mix results from different users.
-- During SSR, relative useFetch requests can forward request context; a plain server-side $fetch does not automatically forward the browser’s cookies.
+There is no undo here. This remains a local practice app without authentication; a real private service must check who may delete each record.
 
 ## Official documentation
 
-- [Nuxt 4: Data Fetching](https://nuxt.com/docs/4.x/getting-started/data-fetching)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Server — method matching and errors](https://nuxt.com/docs/4.x/directory-structure/server)
+- [Nuxt 4: Data fetching](https://nuxt.com/docs/4.x/getting-started/data-fetching)
+- [JSON Server 0.17.4](https://raw.githubusercontent.com/typicode/json-server/v0.17.4/README.md)
 
 [Back to course index](00-course-index.md)

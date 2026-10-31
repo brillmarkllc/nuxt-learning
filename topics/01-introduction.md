@@ -2,93 +2,38 @@
 
 Course section: 1: Introduction
 
-## What you will learn
+Nuxt helps you build websites with pages, buttons, forms, and server code. It brings common website tools together so you spend less time connecting them yourself.
 
-Learn the course roadmap for building a full-stack Nuxt application.
+Nuxt uses **Vue**, a tool for building what people see and click. A Vue **component** is a piece of a page, such as a header or a product card. You can reuse that piece in several places.
 
-In this lesson, **Nuxt** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
+## A shop example
 
-## Key vocabulary
+**Additional example — created to explain the idea:** A small bookshop needs a home page, a page for each book, and a way to load book details. Nuxt provides tools for all three:
 
-- **Nuxt:** A framework built on Vue that provides page routing, rendering, and server tools.
-- **Vue:** A JavaScript framework for building interfaces from reusable components.
-- **Client:** The browser that displays the application and handles user interactions.
-- **Server:** The environment that receives requests, accesses private data, and sends responses.
-- **SSR:** Server-side rendering: creating a page’s initial HTML on the server.
+- Files in `app/pages/` become page addresses. This is called **routing**.
+- Reusable pieces go in `app/components/`. Nuxt can make them available without a separate import statement in each page.
+- Files in `server/api/` can respond to requests for information, such as a list of books.
 
-## What this topic includes
+These are separate jobs. A page displays information; a server endpoint answers a request for information.
 
-Use a Nuxt project with pages enabled. These are small previews of topics taught later.
+## What happens when someone opens a page?
 
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
+By default, Nuxt can prepare the page on the **server**—the computer that responds to a visitor's request—and send its HTML to the browser. HTML describes the page's content and structure. Preparing it this way is called **server-side rendering**, often shortened to SSR.
 
-### 1. Vue basics
+The browser can display that content before all the interactive behavior is ready. JavaScript then makes things such as buttons and forms respond. Having the initial content ready can also help search engines read it.
 
-Clicking the button changes reactive state and updates its label.
+Nuxt also supports generating pages ahead of time or rendering them in the browser. The right choice depends on what the website needs; a page with changing private account information has different needs from a public article.
 
-**Where:** app/components/WelcomeCounter.vue
+## Reading the examples
 
-```vue
-<script setup>
-const count = ref(0)
-</script>
-<template><button @click="count++">Clicks: {{ count }}</button></template>
-```
+File paths tell you where code belongs. `app/pages/about.vue`, for example, means an `about.vue` file inside `pages`, inside `app`. A `.vue` file describes a Vue component.
 
-### 2. Pages and routing
+You do not need to know Vue or TypeScript before starting these notes. TypeScript adds checks to JavaScript code; Nuxt supports it, but the first examples can use ordinary JavaScript. When a new piece of syntax appears, read its explanation alongside the code.
 
-The index page is shown at /. NuxtLink navigates to an about page you create at app/pages/about.vue.
-
-**Where:** app/pages/index.vue
-
-```vue
-<template><main><h1>Home</h1><NuxtLink to="/about">About</NuxtLink></main></template>
-```
-
-### 3. Server APIs
-
-Visit /api/hello to receive JSON from your own server.
-
-**Where:** server/api/hello.get.js
-
-```js
-export default defineEventHandler(() => ({ message: 'Hello from the server' }))
-```
-
-### 4. Authentication and databases
-
-With nuxt-auth-utils installed, a signed-in user receives their session user. A signed-out request gets 401. Database-backed accounts are introduced in lessons 60–66.
-
-**Where:** server/api/me.get.js
-
-```js
-export default defineEventHandler(async (event) => {
-  const { user } = await requireUserSession(event)
-  return { user }
-})
-```
-## Simple example
-
-Build an event planner with pages, login, and saved events.
-
-## Remember
-
-- Practice each section before starting the final project.
-
-## Best practices and edge cases
-
-- Use the Node.js version required by the Nuxt installation guide and keep a lockfile so teammates install the same dependencies.
-- Run development commands from the project root. Inspect package.json scripts before assuming a build or preview command exists.
-- Use the lesson repository branch matching the exercise; do not overwrite an existing project when scaffolding.
-
-## Try it yourself
-
-Rebuild the example above, then test it with a direct page reload and navigation from another page. Check both the browser console and server terminal for errors.
+Start with [installing Node](02-installing-node.md), then follow the setup topics through [creating an app](06-creating-an-app.md) before trying examples that need a running project.
 
 ## Official documentation
 
-- [Nuxt 4: Installation](https://nuxt.com/docs/4.x/getting-started/installation)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Introduction](https://nuxt.com/docs/4.x/getting-started/introduction)
 
 [Back to course index](00-course-index.md)

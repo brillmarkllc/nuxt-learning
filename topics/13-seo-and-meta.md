@@ -2,83 +2,43 @@
 
 Course section: 2: The Pages
 
-## What you will learn
+A page has information that is not shown in its main content: its browser-tab title, a short description, and details used when a link is shared. This information lives in the HTML **head**.
 
-Describe pages through HTML head metadata.
+**SEO** means helping search engines understand a public page. A clear title and description help describe it; they do not guarantee a search ranking.
 
-In this lesson, **SEO** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
+**Additional example:** Replace `app/pages/about.vue` with:
 
-## Key vocabulary
+```vue
+<script setup>
+useSeoMeta({
+  title: 'About our bookshop',
+  description: 'Meet the readers behind the little bookshop.',
+  ogTitle: 'About our bookshop',
+  ogDescription: 'Meet the readers behind the little bookshop.'
+})
+</script>
 
-- **SEO:** Search engine optimization: helping search engines understand and present public pages.
-- **HTML head:** The part of an HTML document containing its title, meta tags, and resource links.
-- **useHead:** A composable for managing document-head content such as titles and links.
-- **useSeoMeta:** A composable for declaring common SEO metadata with typed field names.
-
-## What this topic includes
-
-Each script is an alternative inside a page’s <script setup>. Inspect the browser tab and document head.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. UseHead
-
-useHead can manage document language and other head settings, not only SEO descriptions.
-
-**Where:** app/pages/index.vue — script setup
-
-```js
-useHead({ htmlAttrs: { lang: 'en' }, title: 'Event planner' })
+<template>
+  <main><h1>Books chosen by readers</h1></main>
+</template>
 ```
 
-### 2. UseSeoMeta
+Open `/about`. The browser tab should say “About our bookshop”; the visible heading is deliberately different. `ogTitle` and `ogDescription` describe the page for services that use Open Graph link previews.
 
-useSeoMeta provides named SEO fields, including social sharing metadata.
+Nuxt supplies `useSeoMeta` and creates the corresponding head tags. Inspect the page's HTML head in your browser's developer tools to see the description.
 
-**Where:** app/pages/index.vue — script setup
-
-```js
-useSeoMeta({ title: 'Event planner', description: 'Plan your next meetup.', ogTitle: 'Event planner' })
-```
-
-### 3. Titles
-
-A getter keeps the document title connected to changing page state.
-
-**Where:** app/pages/index.vue — script setup
+For broader settings, use `useHead`. For example, add this inside a `<script setup>` block in `app/app.vue` to declare the language:
 
 ```js
-const eventName = ref('Community meetup')
-useHead({ title: () => `${eventName.value} | Event planner` })
+useHead({ htmlAttrs: { lang: 'en' } })
 ```
 
-### 4. Descriptions
+When a title depends on changing data, pass a function that reads the current value, such as `title: () => book.value.title`, after ensuring the book exists. A copied string will not follow future changes.
 
-The description summarizes the current public page for search engines and previews.
-
-**Where:** app/pages/index.vue — script setup
-
-```js
-useSeoMeta({ description: 'Create events, choose dates, and track what is complete.' })
-```
-## Simple example
-
-`useHead({ title: 'Event planner' })` sets a page title.
-
-## Remember
-
-- HTML head metadata and route metadata serve different purposes.
-
-## Best practices and edge cases
-
-- Use useSeoMeta for typed SEO fields and useHead for broader head configuration. Route metadata does not automatically generate HTML meta tags.
-- Pass a getter when metadata must track changing data, such as a title loaded asynchronously.
-- Keep titles and descriptions meaningful for each public page; check rendered HTML as well as the browser tab.
+Route settings from `definePageMeta` do not automatically set browser titles or descriptions.
 
 ## Official documentation
 
-- [Nuxt 4: Seo Meta](https://nuxt.com/docs/4.x/getting-started/seo-meta)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: SEO and Meta](https://nuxt.com/docs/4.x/getting-started/seo-meta)
 
 [Back to course index](00-course-index.md)

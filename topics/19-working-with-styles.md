@@ -2,89 +2,54 @@
 
 Course section: 2: The Pages
 
-## What you will learn
+**CSS** controls how a page looks: colours, spacing, fonts, and layout. Use a component's style block for local changes and a shared stylesheet for site-wide rules.
 
-Apply styles locally or across the application.
-
-In this lesson, **CSS** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **CSS:** The language used to control colors, spacing, fonts, and page layout.
-- **Scoped style:** A Vue style block whose selectors are limited primarily to that component’s markup.
-- **Component:** A reusable piece of UI containing markup, behavior, and optional styles.
-- **Asset:** A file such as an image, font, or stylesheet used by the application.
-
-## What this topic includes
-
-These files demonstrate component-local CSS and a separate global stylesheet.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Vue style blocks
-
-A normal style block can affect matching elements anywhere in the application.
-
-**Where:** app/components/Notice.vue
+**Additional example:** Replace `app/components/ShopNotice.vue` with:
 
 ```vue
-<template><p class="notice">Saved</p></template>
-<style>.notice { color: green; }</style>
+<template>
+  <aside class="notice">Free delivery on orders over £30.</aside>
+</template>
+
+<style scoped>
+.notice {
+  background: #edf7ef;
+  color: #174b28;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+</style>
 ```
 
-### 2. Scoped styles
+Open `/offers`. The message now has a green background and space around its text. `.notice` selects the element with `class="notice"`. `padding` adds inside space; `border-radius` rounds the corners. `rem` is a size based on the document's font size.
 
-Scoped selectors apply primarily to this component’s own markup.
+`scoped` limits these rules to this component's markup. Without it, matching elements elsewhere can be affected. Scoped styles are not a complete barrier: a child component's outermost element can also receive parent scoped styles.
 
-**Where:** app/components/Notice.vue
+## Styles for every page
 
-```vue
-<template><p>Saved</p></template>
-<style scoped>p { color: green; }</style>
-```
-
-### 3. Global CSS
-
-Load a shared stylesheet once. Create the referenced file with body { margin: 0; }.
-
-**Where:** nuxt.config.ts
-
-```ts
-export default defineNuxtConfig({ css: ['~/assets/css/main.css'] })
-```
-
-### 4. Assets
-
-Assets under app/assets are processed by the build. This shared file establishes a basic font stack.
-
-**Where:** app/assets/css/main.css
+Create `app/assets/css/main.css`:
 
 ```css
-body { font-family: system-ui, sans-serif; }
-button { cursor: pointer; }
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.6;
+}
+main { max-width: 48rem; margin: 2rem auto; padding: 0 1rem; }
 ```
-## Simple example
 
-`<style scoped>h1 { color: blue; }</style>` styles headings in that component.
+Add this property inside the existing `defineNuxtConfig({ ... })` object in `nuxt.config.ts`:
 
-## Remember
+```ts
+css: ['~/assets/css/main.css']
+```
 
-- Global styles can affect unrelated pages; use them deliberately.
+Keep any other configuration properties, separating them with commas. Nuxt includes this stylesheet across the app. Pages should now use the system font and more comfortable spacing.
 
-## Best practices and edge cases
-
-- Use public for files served unchanged and assets for files processed by the build tool. Public paths start at the site root, without /public.
-- Scoped styles limit selectors to component markup, but a child component’s root can still be affected by parent scoped styles.
-- Install the matching preprocessor dependency before using Sass or another preprocessor; include global styles through Nuxt configuration.
-
-## Try it yourself
-
-Rebuild the example above, then test it with a direct page reload and navigation from another page. Check both the browser console and server terminal for errors.
+`app/assets/` holds files processed by Nuxt's build tools. A stylesheet is not included merely because you put it there; reference it as shown above.
 
 ## Official documentation
 
 - [Nuxt 4: Styling](https://nuxt.com/docs/4.x/getting-started/styling)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
 
 [Back to course index](00-course-index.md)

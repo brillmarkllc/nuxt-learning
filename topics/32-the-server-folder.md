@@ -2,102 +2,36 @@
 
 Course section: 3: The server
 
-## What you will learn
+The root `server/` folder holds code that handles requests. Put it beside `app/`, not inside it.
 
-Keep server-only code in its own directory.
+| Location | Job |
+| --- | --- |
+| `server/api/` | Request handlers with `/api` in the address |
+| `server/routes/` | Request handlers without that automatic prefix |
+| `server/middleware/` | Checks or added information before handlers run |
+| `server/plugins/` | Setup when a Nitro server instance starts |
+| `server/utils/` | Helpers reused by server code |
 
-In this lesson, **Server** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
+A **handler** is a function that receives a request and produces a response. An **endpoint** is the address and request method it handles.
 
-## Key vocabulary
-
-- **Server:** The environment that receives requests, accesses private data, and sends responses.
-- **Handler:** A function that processes a particular request or event.
-- **Endpoint:** A URL and HTTP method that a server handles, such as POST /api/events.
-- **Runtime config:** Nuxt configuration available while the application runs, with private and public areas.
-
-## What this topic includes
-
-All server paths below are relative to the project root, alongside nuxt.config.ts.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Root server directory
-
-The server directory is outside app, which separates backend files from page components.
-
-**Where:** Project structure
-
-```text
-nuxt.config.ts
-app/
-  app.vue
-server/
-  api/
-  middleware/
-  plugins/
-  utils/
-```
-
-### 2. API handlers
-
-A GET API handler returns JSON at /api/ping.
-
-**Where:** server/api/ping.get.js
+**Additional example:** Create `server/api/ping.get.js`:
 
 ```js
-export default defineEventHandler(() => ({ pong: true }))
+export default defineEventHandler(() => {
+  return { pong: true }
+})
 ```
 
-### 3. Middleware
+Visit `/api/ping` on your running Nuxt website. You should see `{"pong":true}` rather than a Vue page. Nuxt discovers the file and turns the returned object into a JSON response. No database is needed for this check.
 
-Middleware attaches request-scoped information without sending a response itself.
+The `.get` ending means this handler answers GET requests, the kind a browser normally makes when you open an address.
 
-**Where:** server/middleware/started.js
+Keep database connections and private settings in server code. Page code may also execute on the server during rendering, but that does not make the page's code or returned data private. Only return information the visitor is allowed to receive.
 
-```js
-export default defineEventHandler(event => { event.context.startedAt = Date.now() })
-```
-
-### 4. Plugins
-
-A Nitro plugin runs when a server instance initializes.
-
-**Where:** server/plugins/startup.js
-
-```js
-export default defineNitroPlugin(() => { console.log('Nitro instance ready') })
-```
-
-### 5. Utils
-
-An exported server utility is available in server handlers.
-
-**Where:** server/utils/greeting.js
-
-```js
-export const greeting = name => `Hello, ${name}`
-// In a server handler: return { message: greeting('Ada') }
-```
-## Simple example
-
-Place database access inside `server/` and expose only needed results.
-
-## Remember
-
-- Code in app components is not automatically private just because SSR executes it.
-
-## Best practices and edge cases
-
-- Keep secrets and database operations in the root server directory. Read private settings through runtime configuration.
-- Treat body fields, query parameters, and route parameters as untrusted input. Validate before using them in database operations.
-- Return useful HTTP status codes and safe messages. Avoid sending stack traces, connection strings, or password hashes to the client.
-- Server middleware runs before handlers: attach request context there and avoid returning a normal response from middleware.
-- Authenticate the request and scope record queries to its verified owner; hiding a button or accepting a client-provided user ID does not enforce ownership.
+App and server auto-imports are separate. Do not import Vue components or app composables into a server handler, or server-only helpers into a page.
 
 ## Official documentation
 
-- [Nuxt 4: Server](https://nuxt.com/docs/4.x/directory-structure/server)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Server directory](https://nuxt.com/docs/4.x/directory-structure/server)
 
 [Back to course index](00-course-index.md)

@@ -2,77 +2,54 @@
 
 Course section: 2: The Pages
 
-## What you will learn
+A reusable card becomes more useful when each page can give it different information. Those inputs are called **props**.
 
-Customize component discovery and build profile UI.
-
-In this lesson, **Prefix** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Prefix:** A name added before another name, often derived from a component’s folder.
-- **Auto-import:** Nuxt making supported components or helpers available without a manual import statement.
-- **Component:** A reusable piece of UI containing markup, behavior, and optional styles.
-- **Framework:** A set of tools and conventions that helps you organize and build an application.
-
-## What this topic includes
-
-Assume app/components/profile/Card.vue contains a simple card component. Restart the dev server after changing component configuration if discovery is stale.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Nested component names
-
-With default discovery, the profile folder is included in the generated name.
-
-**Where:** A page using app/components/profile/Card.vue
+**Additional example:** Create `app/components/profile/Card.vue`:
 
 ```vue
-<template><ProfileCard /></template>
+<script setup>
+defineProps({ name: { type: String, required: true } })
+</script>
+
+<template>
+  <article>
+    <h2>{{ name }}</h2>
+    <p>Book club member</p>
+  </article>
+</template>
 ```
 
-### 2. Path prefixes
+Create `app/pages/profile.vue`:
 
-Disable folder prefixes only if component names remain unique across the project.
+```vue
+<template>
+  <main>
+    <h1>Readers</h1>
+    <ProfileCard name="Asha" />
+    <ProfileCard name="Sam" />
+  </main>
+</template>
+```
 
-**Where:** nuxt.config.ts
+At `/profile`, you should see two cards. `defineProps` declares the input: `String` means text, and `required: true` asks callers to supply it. The page supplies `name`; the card displays it. Props belong to the caller, so the card should not change them directly.
+
+Nuxt combines the folder `profile` with the file `Card.vue` to create the name `ProfileCard`.
+
+## Optional: change component names
+
+Nuxt lets you ignore folder prefixes. Merge this setting into the existing object in the root `nuxt.config.ts`:
 
 ```ts
-export default defineNuxtConfig({
-  components: [{ path: '~/components', pathPrefix: false }],
-})
+components: [{ path: '~/components', pathPrefix: false }]
 ```
 
-### 3. Nuxt.config configuration
+This is a configuration fragment, not a whole file. `~` points to `app/` in the standard Nuxt 4 structure. If you apply it, change both `<ProfileCard>` uses to `<Card>`. Restart the development server if discovery has not updated.
 
-The components configuration belongs in the root config. After this change, profile/Card.vue is used as Card instead of ProfileCard.
-
-**Where:** nuxt.config.ts and page usage
-
-```ts
-export default defineNuxtConfig({
-  components: [{ path: '~/components', pathPrefix: false }],
-})
-// Page template: <Card />
-```
-## Simple example
-
-A component inside a profile folder can receive a folder-prefixed component name.
-
-## Remember
-
-- Changing path-prefix behavior can create naming collisions.
-
-## Best practices and edge cases
-
-- Component names can include folder prefixes; choose names that remain unique when you change pathPrefix configuration.
-- The Lazy prefix enables dynamic importing. Combine it with conditional rendering when the component should load only after user interaction.
-- Lazy loading code does not automatically defer hydration. Delayed hydration is a separate optimization with its own triggers.
+Keep the default naming unless you need this change. Two files named `Card.vue` in different folders would compete for the same name when prefixes are disabled.
 
 ## Official documentation
 
-- [Nuxt 4: Components](https://nuxt.com/docs/4.x/directory-structure/app/components)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Components — names](https://nuxt.com/docs/4.x/directory-structure/app/components#component-names)
+- [Vue: Props (supplementary reference)](https://vuejs.org/guide/components/props.html)
 
 [Back to course index](00-course-index.md)

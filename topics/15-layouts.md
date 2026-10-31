@@ -2,86 +2,58 @@
 
 Course section: 2: The Pages
 
-## What you will learn
+A **layout** is a reusable frame around a page, such as a shop header and footer. Use different layouts when some pages need a different frame. If every page shares just one frame, placing it directly in `app/app.vue` is simpler.
 
-Reuse the same page frame across routes.
+## Give reports their own frame
 
-In this lesson, **Layout** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Layout:** A reusable page frame, such as a sidebar and header around changing page content.
-- **Slot:** A placeholder where a component receives content from its parent.
-- **NuxtPage:** Nuxt’s component for displaying the page that matches the current route.
-- **Component:** A reusable piece of UI containing markup, behavior, and optional styles.
-
-## What this topic includes
-
-Create these files together. To activate the named layout, add definePageMeta({ layout: "dashboard" }) to a page’s script setup.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Layouts directory
-
-A layout is a component under the layouts folder. Its root wraps the inserted page.
-
-**Where:** app/layouts/default.vue
+**Additional working example:** Replace the template in `app/app.vue` with the following. Preserve any existing `<script setup>` settings:
 
 ```vue
-<template><div><header>Learning Nuxt</header><slot /></div></template>
+<template>
+  <NuxtLayout>
+    <NuxtPage />
+  </NuxtLayout>
+</template>
 ```
 
-### 2. Default and named layouts
-
-The filename becomes the named layout dashboard. Unspecified pages use default.vue.
-
-**Where:** app/layouts/dashboard.vue
+Create `app/layouts/default.vue`:
 
 ```vue
-<template><div><aside>Dashboard menu</aside><main><slot /></main></div></template>
+<template>
+  <div>
+    <header>The little bookshop</header>
+    <slot />
+    <footer>Happy reading</footer>
+  </div>
+</template>
 ```
 
-### 3. Slots
-
-The slot is where the active page’s content appears inside this layout.
-
-**Where:** app/layouts/minimal.vue
+Create `app/layouts/dashboard.vue`:
 
 ```vue
-<template><main class="minimal"><slot /></main></template>
+<template>
+  <div>
+    <header>Reading dashboard</header>
+    <nav><NuxtLink to="/">Visit the shop</NuxtLink></nav>
+    <slot />
+  </div>
+</template>
 ```
 
-### 4. NuxtLayout
+In `app/pages/reports.vue`, add `layout: 'dashboard'` to the existing page settings:
 
-NuxtLayout chooses the layout and NuxtPage supplies the active page content to its slot.
-
-**Where:** app/app.vue
-
-```vue
-<template><NuxtLayout><NuxtPage /></NuxtLayout></template>
+```js
+definePageMeta({ title: 'Reading reports', layout: 'dashboard' })
 ```
-## Simple example
 
-A dashboard layout contains a sidebar and `<slot />` for page content.
+Visit `/`: the shop header and footer should appear. Visit `/reports`: the dashboard frame should appear instead.
 
-## Remember
+`NuxtLayout` selects the frame. `NuxtPage` supplies the current page. The layout's `<slot />` marks where that page content goes; it is a placeholder for content passed into a component.
 
-- The app must render the layout and page outlets for the layout to appear.
-
-## Best practices and edge cases
-
-- Render NuxtLayout around NuxtPage in app.vue and put a slot inside a reusable layout.
-- Layout names are normalized to kebab-case. Select a named layout with definePageMeta.
-- Layouts require a single root element; the root cannot simply be the slot itself.
-
-## Try it yourself
-
-Rebuild the example above, then test it with a direct page reload and navigation from another page. Check both the browser console and server terminal for errors.
+The default layout is used when a page does not select another one. Layout names follow filenames, using hyphens between words. Keep one outer element around each layout; a bare `<slot />` cannot be the layout's root.
 
 ## Official documentation
 
 - [Nuxt 4: Layouts](https://nuxt.com/docs/4.x/directory-structure/app/layouts)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
 
 [Back to course index](00-course-index.md)

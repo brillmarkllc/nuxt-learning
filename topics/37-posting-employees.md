@@ -2,92 +2,74 @@
 
 Course section: 3: The server
 
-## What you will learn
+A POST request can create an employee record. The server must check the submitted values before sending them to the data service.
 
-Persist an employee through the server API.
-
-In this lesson, **POST** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **POST:** An HTTP method commonly used to create a resource or submit an action.
-- **Record:** One stored item, such as an employee or event.
-- **Request:** A message asking a server to return data or perform an action.
-- **Response:** The result a server sends back after handling a request.
-- **await:** JavaScript syntax that waits for a promise to settle inside a supported context.
-
-## What this topic includes
-
-Run JSON Server and configure the private employeeApiBase setting from lesson 34. Snippets are alternative versions of the POST handler.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Forwarding POST requests
-
-Validate a name, then forward only allowed fields to the mock API.
-
-**Where:** server/api/employees/index.post.js
+**Additional working example:** Use the form from topic 35 and the local service and private configuration from topic 30. Create `server/api/employees/index.post.js`:
 
 ```js
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  if (typeof body?.name !== 'string' || !body.name.trim()) throw createError({ statusCode: 400, statusMessage: 'Name required' })
+  const name = typeof body?.name === 'string' ? body.name.trim() : ''
+  const position = typeof body?.position === 'string' ? body.position.trim() : ''
+  const age = body?.age
+  if (!name || name.length > 100 || !position || position.length > 100 ||
+      !Number.isInteger(age) || age < 18 || age > 100) {
+    throw createError({ status: 400, statusText: 'Check name, position and age' })
+  }
   const config = useRuntimeConfig(event)
-  return await $fetch(`${config.employeeApiBase}/employees`, { method: 'POST', body: { name: body.name.trim() } })
-})
-```
-
-### 2. Returning results
-
-Set 201 after creation and return the saved record, which includes its generated ID.
-
-**Where:** server/api/employees/index.post.js
-
-```js
-export default defineEventHandler(async event => {
-  const body = await readBody(event)
-  if (typeof body?.name !== 'string' || !body.name.trim()) throw createError({ statusCode: 400, statusMessage: 'Name required' })
-  const config = useRuntimeConfig(event)
-  const created = await $fetch(`${config.employeeApiBase}/employees`, { method: 'POST', body: { name: body.name.trim() } })
+  let created
+  try {
+    created = await $fetch(`${config.employeeApiBase}/employees`, {
+      method: 'POST', body: { name, position, age }
+    })
+  } catch {
+    throw createError({ status: 502, statusText: 'Employee service unavailable' })
+  }
   setResponseStatus(event, 201)
   return created
 })
 ```
 
-### 3. Error handling
+**400** means the submitted input is invalid. **201** means a record was created. The handler forwards only the three allowed fields; JSON Server supplies the ID.
 
-A client handler catches a failed API request and keeps the input available for retry.
-
-**Where:** app/pages/employees/new.vue — script setup
+In `app/pages/employees/new.vue`, keep `form` and replace `preview` and the old `submit` function with:
 
 ```js
-const name = ref('Ada')
 const message = ref('')
-async function save() {
-  try { await $fetch('/api/employees', { method: 'POST', body: { name: name.value } }); message.value = 'Saved' }
-  catch { message.value = 'Save failed; your input has been kept.' }
+const saving = ref(false)
+async function submit() {
+  if (saving.value) return
+  saving.value = true
+  message.value = ''
+  try {
+    await $fetch('/api/employees', { method: 'POST', body: { ...form } })
+    await navigateTo('/employees')
+  } catch {
+    message.value = 'Could not save. Check the fields and data service, then retry.'
+  } finally {
+    saving.value = false
+  }
 }
 ```
-## Simple example
 
-Submit an employee form, save the record in JSON Server, then return the created record.
+`{ ...form }` copies the form's fields into the request. `finally` runs whether saving succeeds or fails. Replace the form's submit button and preview paragraph with:
 
-## Remember
+```vue
+<button type="submit" :disabled="saving">{{ saving ? 'Saving…' : 'Save employee' }}</button>
+```
 
-- Await the save before reporting success or redirecting.
+```vue
+<p role="status">{{ message }}</p>
+```
 
-## Best practices and edge cases
+Keep the button inside the form and the message after it. Submit fictional details, return to the list, and press Reload if needed. The new record should appear and remain after a page reload. Failed saves keep the form values available.
 
-- Use useFetch for an HTTP resource or useAsyncData with a custom fetcher during setup. Their payload integration avoids repeating the initial request during hydration.
-- Use $fetch for user-triggered mutations such as submitting a form, then refresh the affected list after success.
-- Pass a getter or computed URL when a request depends on a route parameter. Handle pending, error, empty, and successful results separately.
-- Calls sharing a data key share state. Keep their important options consistent and avoid keys that mix results from different users.
-- During SSR, relative useFetch requests can forward request context; a plain server-side $fetch does not automatically forward the browser’s cookies.
+This local exercise has no authentication. Do not publish it as a private employee-management system.
 
 ## Official documentation
 
-- [Nuxt 4: Data Fetching](https://nuxt.com/docs/4.x/getting-started/data-fetching)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Server — body, errors and status codes](https://nuxt.com/docs/4.x/directory-structure/server)
+- [Nuxt 4: Data fetching](https://nuxt.com/docs/4.x/getting-started/data-fetching)
+- [JSON Server 0.17.4](https://raw.githubusercontent.com/typicode/json-server/v0.17.4/README.md)
 
 [Back to course index](00-course-index.md)

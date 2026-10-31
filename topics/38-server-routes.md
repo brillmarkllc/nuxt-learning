@@ -2,74 +2,32 @@
 
 Course section: 3: The server
 
-## What you will learn
+A file in `server/routes/` creates a server endpoint without adding `/api` to its address. Use it when the address needs to sit outside your API area, such as a simple health check.
 
-Create server endpoints without an API prefix.
-
-In this lesson, **Route** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Route:** A rule connecting a URL path to a page or server handler.
-- **Endpoint:** A URL and HTTP method that a server handles, such as POST /api/events.
-- **Handler:** A function that processes a particular request or event.
-- **defineEventHandler:** The helper used to declare a Nuxt server request handler.
-
-## What this topic includes
-
-These routes do not receive the automatic /api prefix.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Server/routes
-
-Visit /hello to receive plain text from a server route, not a Vue page.
-
-**Where:** server/routes/hello.get.js
+**Additional example:** Create `server/routes/health.get.js`:
 
 ```js
-export default defineEventHandler(() => 'Hello from a server route')
+export default defineEventHandler(() => {
+  return { ok: true, service: 'employee-lab' }
+})
 ```
 
-### 2. Event handlers
+Open `/health` on the running Nuxt site. You should see JSON with `ok: true`. This checks that the handler responds; it does not check the database or prove every part of the app is healthy.
 
-Server routes receive the same event-handler API as files under server/api.
+The same file under `server/api/health.get.js` would answer `/api/health` instead. Both locations use the same handler helpers and method endings.
 
-**Where:** server/routes/request-info.get.js
+For a text response, create `server/routes/greeting.get.js`:
 
 ```js
-export default defineEventHandler(event => ({ method: event.method }))
+export default defineEventHandler(() => 'Hello from the employee app')
 ```
 
-### 3. Response content
+Visit `/greeting` to see the text. Neither response uses a Vue template or your page layout. Use `app/pages/` when you want a normal page with components and navigation.
 
-Returned objects are serialized as JSON; strings can be used for text responses.
-
-**Where:** server/routes/site-info.get.js
-
-```js
-export default defineEventHandler(() => ({ name: 'EventO', version: 1 }))
-```
-## Simple example
-
-`server/routes/hello.js` exposes `/hello` rather than `/api/hello`.
-
-## Remember
-
-- These are HTTP handlers, not Vue page components.
-
-## Best practices and edge cases
-
-- Keep secrets and database operations in the root server directory. Read private settings through runtime configuration.
-- Treat body fields, query parameters, and route parameters as untrusted input. Validate before using them in database operations.
-- Return useful HTTP status codes and safe messages. Avoid sending stack traces, connection strings, or password hashes to the client.
-- Server middleware runs before handlers: attach request context there and avoid returning a normal response from middleware.
-- Authenticate the request and scope record queries to its verified owner; hiding a button or accepting a client-provided user ID does not enforce ownership.
+Choose addresses that do not compete with your page routes. Server handlers and page routes are different systems; server routes do not support every advanced page-routing feature.
 
 ## Official documentation
 
-- [Nuxt 4: Server](https://nuxt.com/docs/4.x/directory-structure/server)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Server routes](https://nuxt.com/docs/4.x/directory-structure/server#server-routes)
 
 [Back to course index](00-course-index.md)

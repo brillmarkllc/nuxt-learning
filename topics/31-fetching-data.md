@@ -2,96 +2,69 @@
 
 Course section: 3: The server
 
-## What you will learn
+**Fetching data** means asking a server for information. Nuxt provides three related tools:
 
-Choose a data-fetching approach for Nuxt pages.
+| Tool | Useful for |
+| --- | --- |
+| `useFetch` | Loading an address for a page, with loading and error state |
+| `useAsyncData` | Loading through your own function, with the same page-data support |
+| `$fetch` | A single request, such as saving a form or calling another service from the server |
 
-In this lesson, **useFetch** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
+## Load the employee list
 
-## Key vocabulary
-
-- **useFetch:** An SSR-aware Nuxt composable for loading an HTTP resource and tracking its result.
-- **useAsyncData:** An SSR-aware Nuxt composable for managing data returned by an asynchronous function.
-- **$fetch:** Nuxt’s HTTP request helper, useful inside server handlers and user-triggered actions.
-- **Payload:** Data sent with a request or transferred from server rendering to the browser.
-- **Asynchronous:** Work that finishes later, such as a network request, without completing immediately.
-
-## What this topic includes
-
-For /api/employees, create a GET handler that returns [{ id: 1, name: "Ada" }]. Page script fragments are alternatives, not one combined script.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. $fetch
-
-Use $fetch for an action triggered later by the user, such as manually loading records.
-
-**Where:** app/pages/employees.vue — script setup
+**Additional working example:** Keep both services from topic 30 running. Create `server/api/employees/index.get.js` at the project root:
 
 ```js
-const employees = ref([])
-async function loadEmployees() {
-  employees.value = await $fetch('/api/employees')
-}
-// Connect to a button: <button @click="loadEmployees">Load</button>
-```
-
-### 2. UseFetch
-
-useFetch loads initial page data and exposes request state.
-
-**Where:** app/pages/employees.vue
-
-```vue
-<script setup>
-const { data: employees, status, error } = await useFetch('/api/employees')
-</script>
-<template><div><p v-if="error">Load failed</p><p v-else-if="status === 'pending'">Loading…</p><pre v-else>{{ employees }}</pre></div></template>
-```
-
-### 3. UseAsyncData
-
-useAsyncData can wrap a custom fetcher under an explicit state key.
-
-**Where:** app/pages/employees.vue — script setup
-
-```js
-const { data: names } = await useAsyncData('employee-names', async () => {
-  const employees = await $fetch('/api/employees')
-  return employees.map(employee => employee.name)
+export default defineEventHandler((event) => {
+  const config = useRuntimeConfig(event)
+  return $fetch(`${config.employeeApiBase}/employees`)
 })
 ```
 
-### 4. SSR data transfer
+This small server handler answers `/api/employees` by reading the local mock service. The next topics explain the server file conventions.
 
-Nuxt transfers successful SSR data in its payload so hydration can reuse it instead of immediately requesting it again.
+Replace `app/pages/employees/index.vue` with:
 
-**Where:** app/pages/employees.vue — script setup
+```vue
+<script setup>
+const { data: employees, status, error, refresh } = await useFetch('/api/employees')
+</script>
+
+<template>
+  <main>
+    <h1>Employees</h1>
+    <button :disabled="status === 'pending'" @click="() => refresh()">Reload</button>
+    <p v-if="status === 'pending'">Loading employees…</p>
+    <p v-else-if="error">Could not load employees. Check the local data service.</p>
+    <p v-else-if="!employees?.length">No employees yet.</p>
+    <ul v-else>
+      <li v-for="employee in employees" :key="employee.id">{{ employee.name }}</li>
+    </ul>
+  </main>
+</template>
+```
+
+Visit `/employees`: Asha should appear. Stop JSON Server and press Reload to check the failure message, then restart it and reload again.
+
+`data: employees` gives the returned data a clearer local name. `v-if` and `v-else-if` choose what to show. `v-for` repeats a list item for each record; `:key` gives Vue a stable identifier. `refresh()` repeats the request.
+
+Nuxt transfers successful server-loaded data to the browser so hydration can reuse it. A bare top-level `$fetch` does not provide that transfer and can cause duplicate loading. Use `$fetch` inside submit handlers for later actions.
+
+For a custom calculation, an alternative setup expression is:
 
 ```js
-const { data } = await useAsyncData('initial-employees', () => $fetch('/api/employees'))
-// Avoid replacing this with a bare top-level await $fetch(...) for initial page data.
+const { data: names } = await useAsyncData('employee-names', async () => {
+  const rows = await $fetch('/api/employees')
+  return rows.map(row => row.name)
+})
 ```
-## Simple example
 
-`const { data, error } = await useFetch('/api/employees')` loads page data.
-
-## Remember
-
-- The transcript sometimes garbles API names; useAsyncData is the intended helper, not useAsyncFetch.
-
-## Best practices and edge cases
-
-- Use useFetch for an HTTP resource or useAsyncData with a custom fetcher during setup. Their payload integration avoids repeating the initial request during hydration.
-- Use $fetch for user-triggered mutations such as submitting a form, then refresh the affected list after success.
-- Pass a getter or computed URL when a request depends on a route parameter. Handle pending, error, empty, and successful results separately.
-- Calls sharing a data key share state. Keep their important options consistent and avoid keys that mix results from different users.
-- During SSR, relative useFetch requests can forward request context; a plain server-side $fetch does not automatically forward the browser’s cookies.
+This returns a list of names; `map` transforms each item. It is an alternative data example, not a replacement for the page above without changing its template. Calls sharing a key share state, so keep their data shape and options consistent.
 
 ## Official documentation
 
-- [Nuxt 4: Data Fetching](https://nuxt.com/docs/4.x/getting-started/data-fetching)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Data fetching](https://nuxt.com/docs/4.x/getting-started/data-fetching)
+- [Nuxt 4: Server directory](https://nuxt.com/docs/4.x/directory-structure/server)
+- [Nuxt 4: Runtime config](https://nuxt.com/docs/4.x/guide/going-further/runtime-config)
 
 [Back to course index](00-course-index.md)

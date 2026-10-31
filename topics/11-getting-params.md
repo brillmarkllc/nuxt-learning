@@ -2,96 +2,40 @@
 
 Course section: 2: The Pages
 
-## What you will learn
+An address can carry two kinds of information. In `/books/101?tab=reviews`, `101` is a **route parameter** matched by `[id].vue`. `tab=reviews` is a **query value**, an optional setting after `?`.
 
-Read dynamic and query values from the active route.
-
-In this lesson, **useRoute** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **useRoute:** Nuxt’s composable for reading the current route and its parameters.
-- **Parameter:** A value extracted from a matched route, such as 42 from /users/42.
-- **Query string:** Optional URL values after ?, such as ?page=2&sort=name.
-- **Reactive value:** A value Vue tracks so dependent UI or calculations can update when it changes.
-
-## What this topic includes
-
-Open /users/42?tab=posts&page=2 when using these snippets in app/pages/users/[id].vue. Script snippets belong inside <script setup>.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. UseRoute
-
-Nuxt supplies useRoute automatically; do not import it from vue-router.
-
-**Where:** app/pages/users/[id].vue — script setup
-
-```js
-const route = useRoute()
-```
-
-### 2. Params
-
-A computed value stays up to date if this page instance is reused for another user.
-
-**Where:** app/pages/users/[id].vue — script setup
-
-```js
-const route = useRoute()
-const userId = computed(() => String(route.params.id))
-```
-
-### 3. Query strings
-
-Query values need defaults and validation. This example converts page to a positive integer.
-
-**Where:** app/pages/users/[id].vue — script setup
-
-```js
-const route = useRoute()
-const page = computed(() => {
-  const number = Number(route.query.page ?? 1)
-  return Number.isInteger(number) && number > 0 ? number : 1
-})
-```
-
-### 4. Script and template access
-
-The script creates tab; the template can read tab and the current route directly.
-
-**Where:** app/pages/users/[id].vue
+**Additional example:** Replace `app/pages/books/[id].vue` from topic 10 with:
 
 ```vue
 <script setup>
 const route = useRoute()
-const tab = computed(() => String(route.query.tab ?? 'overview'))
+const tab = computed(() =>
+  route.query.tab === 'reviews' ? 'reviews' : 'details'
+)
 </script>
-<template><p>User {{ $route.params.id }} — tab: {{ tab }}</p></template>
+
+<template>
+  <main>
+    <h1>Book {{ route.params.id }}</h1>
+    <p>Selected section: {{ tab }}</p>
+    <NuxtLink :to="{ path: route.path, query: { tab: 'reviews' } }">
+      Read reviews
+    </NuxtLink>
+  </main>
+</template>
 ```
-## Simple example
 
-For `/users/42?tab=posts`, read `useRoute().params.id` and `useRoute().query.tab`.
+Visit `/books/101`, then click “Read reviews”. The selected section changes from `details` to `reviews`, and the address gains `?tab=reviews`.
 
-## Remember
+`computed` creates a value that is recalculated when the route information changes. The `? ... : ...` expression chooses between two values: use `reviews` only for that exact query value; otherwise use `details`. This also handles missing or unexpected input.
 
-- URL values need validation before use in queries or calculations.
+The colon in `:to` tells Vue that the link destination is a JavaScript value rather than plain text. Here it contains the current path and a query setting.
 
-## Best practices and edge cases
-
-- Use app/pages in the Nuxt 4 application structure. A parent page that displays nested child pages needs a NuxtPage outlet.
-- A page should have a single root element for page transitions. HTML comments also count when diagnosing multiple-root issues.
-- Use Nuxt’s useRoute rather than importing it directly from vue-router; route updates are coordinated with Nuxt page rendering.
-- Read a changing route parameter reactively. A value copied once during setup may become stale when navigation reuses a component.
-
-## Try it yourself
-
-Rebuild the example above, then test it with a direct page reload and navigation from another page. Check both the browser console and server terminal for errors.
+Nuxt supplies `computed` and `useRoute` automatically. Use Nuxt's `useRoute`, not a separate import from `vue-router`. Avoid copying an ID just once with `const id = route.params.id` if it must update during navigation; read it from `route` or use a computed value.
 
 ## Official documentation
 
-- [Nuxt 4: Pages](https://nuxt.com/docs/4.x/directory-structure/app/pages)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: useRoute](https://nuxt.com/docs/4.x/api/composables/use-route)
+- [Nuxt 4: Pages — navigation](https://nuxt.com/docs/4.x/directory-structure/app/pages#navigation)
 
 [Back to course index](00-course-index.md)

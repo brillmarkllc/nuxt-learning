@@ -2,83 +2,45 @@
 
 Course section: 2: The Pages
 
-## What you will learn
+Nuxt scans the top level of `app/composables/` by default. If you organise functions into subfolders, expose them through a file Nuxt does scan. This is called a **re-export**: making another file's export available through a shared entry point.
 
-Expose composables stored in subdirectories.
-
-In this lesson, **Export** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Export:** Making a value or function available for another file to import.
-- **Re-export:** Exporting something from another file through a shared entry file.
-- **Composable:** A function that packages reusable Vue or Nuxt logic, often using reactive state.
-- **Auto-import:** Nuxt making supported components or helpers available without a manual import statement.
-
-## What this topic includes
-
-Use these files together to expose a composable stored below the top-level scanned directory.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Auto-import discovery
-
-A top-level entry file is discovered by Nuxt and can re-export nested helpers.
-
-**Where:** app/composables/index.js
+**Additional example:** Create `app/composables/books/useReadingGoal.js`:
 
 ```js
-export { useEventTitle } from './events/useEventTitle'
+export function useReadingGoal() {
+  return ref(12)
+}
 ```
 
-### 2. Nested files
-
-The nested file contains the implementation but should be exposed through the top-level export.
-
-**Where:** app/composables/events/useEventTitle.js
+Create `app/composables/index.js`, or add this line if it already exists:
 
 ```js
-export const useEventTitle = () => ref('Untitled event')
+export { useReadingGoal } from './books/useReadingGoal.js'
 ```
 
-### 3. Explicit re-exports
-
-The re-export makes useEventTitle available in setup without a manual import.
-
-**Where:** app/pages/index.vue
+Create `app/pages/goal.vue`:
 
 ```vue
 <script setup>
-const title = useEventTitle()
+const goal = useReadingGoal()
 </script>
-<template><input v-model="title" aria-label="Event title" /></template>
+
+<template>
+  <main>
+    <h1>Reading goal: {{ goal }}</h1>
+    <button @click="goal++">Add one book</button>
+  </main>
+</template>
 ```
-## Simple example
 
-Re-export a nested helper from `app/composables/index.js`.
+At `/goal`, the starting goal is 12 and the button increases it. The nested file holds the behaviour; `index.js` makes its name discoverable. `export` means other files can use the function, and `./` starts a path from the current folder.
 
-## Remember
+If the editor cannot find the function, check its spelling and re-export path, then start `npm run dev` so Nuxt can refresh its generated import information. Do not edit `.nuxt/imports.d.ts` yourself.
 
-- Do not assume every nested file is automatically discovered by the course configuration.
-
-## Best practices and edge cases
-
-- Auto-import discovery follows configured directories. Re-export nested composables from a scanned entry file when needed.
-- Call Nuxt composables in a supported Nuxt context, usually setup, a plugin, or route middleware. A generic asynchronous callback can lose that context.
-- Keep per-user reactive state out of module-level variables on the server; use SSR-aware state management when sharing state.
-
-## Practical tip
-
-Re-export deliberately: export { useExample } from "./nested/useExample" in a scanned composables entry file.
-
-## Try it yourself
-
-Rebuild the example above, then test it with a direct page reload and navigation from another page. Check both the browser console and server terminal for errors.
+Nuxt also supports configuring deeper directory scans, but a small explicit re-export is often easier to follow.
 
 ## Official documentation
 
-- [Nuxt 4: Composables](https://nuxt.com/docs/4.x/directory-structure/app/composables)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Composables — how files are scanned](https://nuxt.com/docs/4.x/directory-structure/app/composables#how-files-are-scanned)
 
 [Back to course index](00-course-index.md)

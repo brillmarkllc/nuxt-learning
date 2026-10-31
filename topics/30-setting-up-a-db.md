@@ -2,85 +2,51 @@
 
 Course section: 3: The server
 
-## What you will learn
+A **database** stores information so it survives a page reload. For the employee examples, use JSON Server: a small practice service that reads and updates a local file. It is a mock API, not a production account or database system.
 
-Create a local mock API for CRUD practice.
-
-In this lesson, **Mock API** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Mock API:** A practice API that imitates a real service without its full production infrastructure.
-- **JSON:** A text format for exchanging structured data using objects, arrays, and basic values.
-- **Database:** A system for storing and querying application data.
-- **Record:** One stored item, such as an employee or event.
-- **CRUD:** Create, read, update, and delete: the four basic operations for stored records.
-
-## What this topic includes
-
-Use JSON Server 0.17.4 for this course-style exercise. The mock API is for local practice; never expose it as an authenticated production database.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. JSON Server
-
-Pin the mock API package because newer major versions use different behavior.
-
-**Where:** Terminal
+**Additional working example:** From the `employee-lab` project root, install the specific version used by these examples:
 
 ```sh
 npm install -D json-server@0.17.4
 ```
 
-### 2. JSON records
-
-The top-level employees collection becomes the /employees resource.
-
-**Where:** db.json
+Create `db.json` in the project root:
 
 ```json
-{ "employees": [{ "id": 1, "name": "Ada", "position": "Developer", "age": 28 }] }
+{
+  "employees": [
+    { "id": 1, "name": "Asha", "position": "Bookseller", "age": 28 }
+  ]
+}
 ```
 
-### 3. Local ports
+**JSON** is a text format for structured information. Curly braces hold named fields; square brackets hold a list. Field names and text use double quotes. Do not add comments inside this file.
 
-Nuxt commonly uses 3000; run the mock API on 3001 to avoid a port conflict.
-
-**Where:** Terminal
+Run the mock service in its own terminal:
 
 ```sh
-npx json-server --watch db.json --port 3001
+npx json-server --watch db.json --host 127.0.0.1 --port 3001
 ```
 
-### 4. Running the API
+Visit `http://127.0.0.1:3001/employees`: you should see the list containing Asha. Keep this terminal open. Run Nuxt in another terminal with `npm run dev`; it normally uses port 3000. A **port** distinguishes services running on the same computer.
 
-Keep JSON Server running, then query its collection from another terminal.
+## Tell Nuxt where the service is
 
-**Where:** Another terminal
+Add this property inside `defineNuxtConfig({ ... })` in `nuxt.config.ts`:
 
-```sh
-curl http://localhost:3001/employees
+```ts
+runtimeConfig: {
+  employeeApiBase: 'http://127.0.0.1:3001'
+}
 ```
-## Simple example
 
-Store an employees collection in a JSON file and fetch it from the mock server.
+Later server handlers read this setting. It is outside `public`, so Nuxt does not automatically send it to browser code. The matching environment override is `NUXT_EMPLOYEE_API_BASE`.
 
-## Remember
-
-- The course relies on a specific JSON Server version; keep the mock API running separately.
-
-## Best practices and edge cases
-
-- Use useFetch for an HTTP resource or useAsyncData with a custom fetcher during setup. Their payload integration avoids repeating the initial request during hydration.
-- Use $fetch for user-triggered mutations such as submitting a form, then refresh the affected list after success.
-- Pass a getter or computed URL when a request depends on a route parameter. Handle pending, error, empty, and successful results separately.
-- Calls sharing a data key share state. Keep their important options consistent and avoid keys that mix results from different users.
-- During SSR, relative useFetch requests can forward request context; a plain server-side $fetch does not automatically forward the browser’s cookies.
+JSON Server saves successful changes back into `db.json`. Use fictional records and keep the service local: these exercises do not add sign-in or access controls. The version is pinned because newer JSON Server versions have different behaviour. Nuxt's docs explain the configuration; the linked JSON Server documentation supplies the mock-service setup.
 
 ## Official documentation
 
-- [Nuxt 4: Data Fetching](https://nuxt.com/docs/4.x/getting-started/data-fetching)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Runtime config](https://nuxt.com/docs/4.x/guide/going-further/runtime-config)
+- [JSON Server 0.17.4: official README](https://raw.githubusercontent.com/typicode/json-server/v0.17.4/README.md)
 
 [Back to course index](00-course-index.md)
