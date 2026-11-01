@@ -2,85 +2,45 @@
 
 Course section: 6: Practice app: EventO
 
-## What you will learn
+The home page can welcome signed-out visitors and show personal content only after a session is available. Auth Utils provides `loggedIn` and `user` for this decision.
 
-Choose home-page content based on session state.
-
-In this lesson, **Session** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Session:** Information used by the server and client to recognize a signed-in user across requests.
-- **Authentication:** Checking who a user is, such as by verifying sign-in credentials.
-- **Empty state:** UI shown when a request succeeds but there are no items to display.
-- **Authorization:** Checking whether that user may perform an action on a particular resource.
-
-## What this topic includes
-
-Requires nuxt-auth-utils. Render the MyEvents component created in lesson 76.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Signed-in view
-
-Show the protected UI only when session state reports a signed-in user.
-
-**Where:** app/pages/index.vue
+**Additional working example:** Replace `app/pages/index.vue` in EventO with:
 
 ```vue
 <script setup>
-const { loggedIn } = useUserSession()
+const { loggedIn, user } = useUserSession()
 </script>
-<template><main><MyEvents v-if="loggedIn" /><NuxtLink v-else to="/login">Sign in to view events</NuxtLink></main></template>
+
+<template>
+  <main>
+    <h1>EventO</h1>
+    <section v-if="loggedIn">
+      <p>Welcome, {{ user?.email }}.</p>
+      <NuxtLink to="/events/create">Create an event</NuxtLink>
+      <p>Your event list is added in the next topic.</p>
+    </section>
+    <section v-else>
+      <p>Keep your meetups in one place. Sign in to see your private events.</p>
+      <NuxtLink to="/login">Sign in or create account</NuxtLink>
+    </section>
+  </main>
+</template>
 ```
 
-### 2. Signed-out message
+Open `/` while signed out: the account link should appear. Sign in: the welcome message and create-event link should appear. Reload to confirm the session still supplies the right view.
 
-Provide a useful signed-out view instead of an empty screen.
+`v-if` only creates the selected section. This matters when the signed-in section later contains a component that requests private data: signed-out visitors should not create that component and immediately produce an unnecessary 401 request.
 
-**Where:** app/pages/index.vue
+The authentication helper refreshes session state after account actions. Do not keep fetching the session on every render, and do not infer login from local browser storage.
 
-```vue
-<script setup>
-const { loggedIn } = useUserSession()
-</script>
-<template><main><p v-if="!loggedIn">Your events are private. Sign in to continue.</p><MyEvents v-else /></main></template>
-```
+A visible session-based view is not server authorization. The event-list endpoint must independently read the verified session and filter records by its user ID. That endpoint and its display component are added together next.
 
-### 3. Session refresh
-
-Refresh after an authentication-changing action; do not repeatedly fetch the session on every render.
-
-**Where:** A page — script setup
-
-```js
-const { fetch: refreshSession } = useUserSession()
-async function recheckSession() { await refreshSession() }
-// Optional button: <button @click="recheckSession">Check session again</button>
-```
-## Simple example
-
-A visitor sees a login prompt; an authenticated user sees the events area.
-
-## Remember
-
-- Do not fetch another user's records using an unverified client-provided identity.
-
-## Best practices and edge cases
-
-- Use SSR-aware shared state such as useState or a properly configured Pinia integration. A module-level reactive object can leak state across server requests.
-- Initialize browser-only work after mount. Avoid rendering different initial markup based on localStorage, browser time zones, or random values.
-- Keep serialized state simple and safe: never place passwords or private server credentials in client-visible state.
-- Restore display state from the authenticated session after reload. Clear stale user data and fetched results when the account changes or signs out.
+Keep this personal home view out of shared prerendered output and public response caches.
 
 ## Official documentation
 
-- [Nuxt 4: State Management](https://nuxt.com/docs/4.x/getting-started/state-management)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
-
-## Package references for these examples
-
-- [Nuxt Auth Utils setup and session helpers](https://nuxt.com/modules/auth-utils)
+- [Nuxt 4: Sessions and authentication — session-aware pages](https://nuxt.com/docs/4.x/guide/recipes/sessions-and-authentication)
+- [Nuxt 4: State management](https://nuxt.com/docs/4.x/getting-started/state-management)
+- [Auth Utils: Session composable](https://github.com/atinux/nuxt-auth-utils#vue-composable)
 
 [Back to course index](00-course-index.md)

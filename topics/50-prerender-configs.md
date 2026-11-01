@@ -2,73 +2,52 @@
 
 Course section: 4: Building
 
-## What you will learn
+Nuxt's crawler follows page links when generating a site. It cannot invent every value for a dynamic address. List public addresses explicitly when they are not discoverable.
 
-Select routes to render ahead of time.
+**Additional example:** In `render-lab`, create `app/pages/books/[id].vue`:
 
-In this lesson, **Prerendering** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
+```vue
+<script setup>
+const route = useRoute()
+</script>
 
-## Key vocabulary
-
-- **Prerendering:** Creating a route’s HTML ahead of requests, usually during the build.
-- **Route rules:** Configuration that chooses behavior, such as prerendering, for matching URL paths.
-- **SSR:** Server-side rendering: creating a page’s initial HTML on the server.
-- **Caching:** Reusing a saved result instead of doing the same work again.
-
-## What this topic includes
-
-Create the listed public pages. Do not pre-render personal account data.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Nitro prerender configuration
-
-Nitro can receive an explicit set of routes to generate ahead of requests.
-
-**Where:** nuxt.config.ts
-
-```ts
-export default defineNuxtConfig({ nitro: { prerender: { routes: ['/about', '/help'] } } })
+<template>
+  <main><h1>Public book {{ route.params.id }}</h1></main>
+</template>
 ```
 
-### 2. Explicit route lists
-
-Dynamic URLs that a crawler cannot discover can be listed explicitly when their content is public.
-
-**Where:** nuxt.config.ts
+Add the following inside the existing `defineNuxtConfig({ ... })` object in `nuxt.config.ts`:
 
 ```ts
-export default defineNuxtConfig({ nitro: { prerender: { routes: ['/products/1', '/products/2'] } } })
+nitro: {
+  prerender: {
+    routes: ['/books/101', '/books/102']
+  }
+}
 ```
 
-### 3. Mixed rendering
+This uses Nitro's prerender configuration. The current Nuxt guide also documents a top-level `prerender` option; use one configuration location consistently rather than duplicating the route list.
 
-Generate the public about page while keeping account pages dynamic in a server deployment.
+Run:
 
-**Where:** nuxt.config.ts
-
-```ts
-export default defineNuxtConfig({ routeRules: { '/about': { prerender: true }, '/account/**': { prerender: false } } })
+```sh
+npx nuxt generate
+npx serve .output/public
 ```
-## Simple example
 
-Pre-render a public landing page while keeping employee mutations on the server.
+Open `/books/101` and `/books/102` directly at the printed preview address. Both should display their headings. Look for their generated HTML under `.output/public/books/`.
 
-## Remember
+Listing addresses schedules visits; it does not create a page file or supply missing database records. If the page loads external data, that source must be reachable while generation runs.
 
-- Avoid generating private user-specific pages as shared static HTML.
+## Exclude pages that must stay dynamic
 
-## Best practices and edge cases
+In a server build, route rules can prerender `/about` while leaving other pages to the server. `prerender: false` prevents generation; it does not create a server in static output.
 
-- Universal rendering produces HTML on the server, then hydrates it in the browser. Initial markup must agree in both environments.
-- A static deployment serves generated files and cannot execute your Nuxt API handlers. Keep a server deployment or a separately hosted backend for dynamic writes.
-- Pre-rendered data is captured during the build. Keep private or frequently changing user data out of shared generated output.
-- Use routeRules to choose rendering behavior for specific paths. Verify dynamic routes and direct page reloads in the production build.
+Do not list account pages containing private information. Generated HTML and page data can be shared files, and changing their source information later does not update them until another build.
 
 ## Official documentation
 
-- [Nuxt 4: Rendering](https://nuxt.com/docs/4.x/guide/concepts/rendering)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Prerendering — route lists and rules](https://nuxt.com/docs/4.x/getting-started/prerendering)
+- [Nuxt 4: Hybrid rendering](https://nuxt.com/docs/4.x/guide/concepts/rendering#hybrid-rendering)
 
 [Back to course index](00-course-index.md)

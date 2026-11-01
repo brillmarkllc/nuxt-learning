@@ -2,124 +2,62 @@
 
 Course section: 5: Authentication
 
-## What you will learn
+The sign-up endpoint has four jobs: check input, hash the password, save the account, and establish a session. It accepts signed-out visitors; event endpoints later require a verified session.
 
-Implement the server side of account creation.
-
-In this lesson, **Authentication** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Authentication:** Checking who a user is, such as by verifying sign-in credentials.
-- **Password hash:** A one-way derived value used to verify a password without storing the password itself.
-- **Validation:** Checking that input meets your rules before accepting or storing it.
-- **Session:** Information used by the server and client to recognize a signed-in user across requests.
-- **Endpoint:** A URL and HTTP method that a server handles, such as POST /api/events.
-
-## What this topic includes
-
-Requires nuxt-auth-utils and its session secret (lesson 56), connectDB (61), and the complete User model with passwordHash (62). Install Yup. Use the final complete handler below; the first blocks explain its parts. These teaching examples need email verification, abuse controls, and duplicate-key handling before public launch.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Request body
-
-Whitelist and validate the submitted fields before using them. In a handler, event is its callback argument.
-
-**Where:** server/api/auth/sign-up.post.js — input stage
+**Additional working example:** Complete topics 56 and 60–62 first. Create `server/api/auth/sign-up.post.js`:
 
 ```js
 import * as yup from 'yup'
-const signupSchema = yup.object({ email: yup.string().trim().lowercase().email().required(), password: yup.string().min(12).max(128).required() })
-// Inside the handler:
-// const input = await signupSchema.validate(await readBody(event), { stripUnknown: true })
-```
+import User from '../../models/User.js'
 
-### 2. Database access
+const schema = yup.object({
+  email: yup.string().trim().lowercase().email().max(254).required(),
+  password: yup.string().strict().min(12).max(128).required()
+}).required()
 
-Use the model only after connecting. These lines belong inside the async handler after input validation.
-
-**Where:** server/api/auth/sign-up.post.js — database stage
-
-```js
-import User from '../../models/User'
-async function checkAccountAvailability(event, email) {
-  await connectDB(useRuntimeConfig(event).mongodbUri)
-  const exists = await User.exists({ email })
-  if (exists) throw createError({ statusCode: 409, statusMessage: 'Account cannot be created' })
-}
-// Use after validation: await checkAccountAvailability(event, input.email)
-// Still handle duplicate-key races on creation, as the complete handler does.
-```
-
-### 3. Password hashing
-
-The authentication module supplies a password hashing helper. Never store the original password or return the hash.
-
-**Where:** Inside the sign-up handler
-
-```js
-const passwordHash = await hashPassword('example-only-password')
-// In the real handler, hash input.password, not a hardcoded example.
-```
-
-### 4. Session setup
-
-Create the account and establish a session containing only a public identifier and email. Expected result: 201 and a user object, never a hash.
-
-**Where:** server/api/auth/sign-up.post.js — complete teaching handler
-
-```js
-import * as yup from 'yup'
-import User from '../../models/User'
-const schema = yup.object({ email: yup.string().trim().lowercase().email().required(), password: yup.string().min(12).max(128).required() })
-export default defineEventHandler(async event => {
+export default defineEventHandler(async (event) => {
   let input
-  try { input = await schema.validate(await readBody(event), { stripUnknown: true }) }
-  catch (error) {
-    if (error instanceof yup.ValidationError) throw createError({ statusCode: 400, statusMessage: 'Invalid sign-up input' })
+  try {
+    input = await schema.validate(await readBody(event), { stripUnknown: true })
+  } catch (error) {
+    if (error instanceof yup.ValidationError) {
+      throw createError({ status: 400, statusText: 'Invalid sign-up input' })
+    }
     throw error
   }
   await connectDB(useRuntimeConfig(event).mongodbUri)
+  await User.init()
   const passwordHash = await hashPassword(input.password)
   let account
-  try { account = await User.create({ email: input.email, passwordHash }) }
-  catch (error) {
-    if (error?.code === 11000) throw createError({ statusCode: 409, statusMessage: 'Account cannot be created' })
-    throw error
+  try {
+    account = await User.create({ email: input.email, passwordHash })
+  } catch (error) {
+    if (error?.code === 11000) {
+      throw createError({ status: 409, statusText: 'Account cannot be created' })
+    }
+    throw createError({ status: 503, statusText: 'Account service unavailable' })
   }
   const user = { id: String(account._id), email: account.email }
-  await setUserSession(event, { user })
+  await replaceUserSession(event, { user })
   setResponseStatus(event, 201)
   return { user }
 })
 ```
-## Simple example
 
-Validate input, hash the password, save the account, and establish its session.
+`hashPassword` is supplied by Auth Utils. A hash lets the server verify a later password without storing the original. Never return the hash or put it in session data.
 
-## Remember
+`User.init()` waits for this model's index setup in the small development app. The unique email index and duplicate-key check prevent duplicate records, including simultaneous sign-up attempts. Larger deployments should manage index creation deliberately.
 
-- Never return a password hash to the browser or store plaintext passwords.
+`replaceUserSession` replaces previous session data instead of merging an earlier account into the new session. The cookie holds only the public user ID and email. Status **201** reports creation; **400** reports invalid input; **409** reports an account conflict.
 
-## Best practices and edge cases
-
-- Keep secrets and database operations in the root server directory. Read private settings through runtime configuration.
-- Treat body fields, query parameters, and route parameters as untrusted input. Validate before using them in database operations.
-- Return useful HTTP status codes and safe messages. Avoid sending stack traces, connection strings, or password hashes to the client.
-- Server middleware runs before handlers: attach request context there and avoid returning a normal response from middleware.
-- Sign-up and sign-in accept signed-out visitors. Protected account and event endpoints require a verified session and authorization checks.
+The next topic connects the form. After submitting there, check the database: the user should have a password hash and no plain password. This example establishes a basic session; email ownership verification, password recovery, and request-abuse limits are separate features needed for a public account service.
 
 ## Official documentation
 
-- [Nuxt 4: Server](https://nuxt.com/docs/4.x/directory-structure/server)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
-
-## Package references for these examples
-
-- [Nuxt Auth Utils setup and session helpers](https://nuxt.com/modules/auth-utils)
-- [Yup schema and validation API](https://github.com/jquense/yup)
-- [Mongoose models and queries](https://mongoosejs.com/docs/guide.html)
+- [Nuxt 4: Sessions and authentication](https://nuxt.com/docs/4.x/guide/recipes/sessions-and-authentication)
+- [Nuxt 4: Server request handling](https://nuxt.com/docs/4.x/directory-structure/server)
+- [Auth Utils: Server session and password helpers](https://github.com/atinux/nuxt-auth-utils#server-utils)
+- [Yup: Validation](https://github.com/jquense/yup)
+- [Mongoose: Unique indexes](https://mongoosejs.com/docs/validation.html#the-unique-option-is-not-a-validator)
 
 [Back to course index](00-course-index.md)

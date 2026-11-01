@@ -2,103 +2,66 @@
 
 Course section: 6: Practice app: EventO
 
-## What you will learn
+The event form can now send its values to the protected POST endpoint. Keep the visitor on the form if saving fails, so their work is available for retry.
 
-Submit an event form to the API.
-
-In this lesson, **POST** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **POST:** An HTTP method commonly used to create a resource or submit an action.
-- **$fetch:** Nuxt’s HTTP request helper, useful inside server handlers and user-triggered actions.
-- **Toast:** A brief on-screen message confirming an action or reporting a problem.
-- **Redirect:** Sending a visitor or request to another location.
-
-## What this topic includes
-
-Requires the POST endpoint from lesson 72. The toast example additionally needs Nuxt UI and <UApp> around your app content. These page script fragments are progressive steps.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. POST request
-
-A mutation uses $fetch inside the submit handler rather than an initial-data composable.
-
-**Where:** A create-event page — script setup
-
-```js
-async function createEvent(payload) { return await $fetch('/api/events', { method: 'POST', body: payload }) }
-```
-
-### 2. Payload
-
-Send only the editable fields. The server derives owner and status independently.
-
-**Where:** A create-event page — script setup
-
-```js
-const form = reactive({ title: '', content: '', date: '' })
-function makePayload() { return { title: form.title, content: form.content, date: form.date || null } }
-```
-
-### 3. Toast feedback
-
-Show a toast only after saving succeeds; display a failure message otherwise.
-
-**Where:** A create-event page — script setup
-
-```js
-const toast = useToast()
-async function save(payload) {
-  try { await $fetch('/api/events', { method: 'POST', body: payload }); toast.add({ title: 'Event created' }) }
-  catch { toast.add({ title: 'Could not create event', color: 'error' }) }
-}
-```
-
-### 4. Redirect
-
-Disable the submit button while pending and redirect only on success.
-
-**Where:** A create-event page — script setup
+**Additional walkthrough:** In `app/pages/events/create.vue`, keep `form` and the auth middleware. Remove `preview` and replace the old `submit` function with these setup lines:
 
 ```js
 const pending = ref(false)
-const errorMessage = ref('')
-async function submit(payload) {
+const message = ref('')
+const fieldErrors = ref({})
+const toast = useToast()
+
+async function submit() {
   if (pending.value) return
   pending.value = true
-  try { await $fetch('/api/events', { method: 'POST', body: payload }); await navigateTo('/') }
-  catch { errorMessage.value = 'Could not save this event.' }
-  finally { pending.value = false }
+  message.value = ''
+  fieldErrors.value = {}
+  try {
+    await $fetch('/api/events', {
+      method: 'POST',
+      body: { title: form.title.trim(), content: form.content.trim(), date: form.date || null }
+    })
+    clearNuxtData(key => key.startsWith('my-events:'))
+    toast.add({ title: 'Event created', color: 'success' })
+    await navigateTo('/')
+  } catch (error) {
+    fieldErrors.value = error.data?.data?.fields || {}
+    message.value = error.response?.status === 401
+      ? 'Your session has ended. Sign in again before saving.'
+      : 'Could not save this event. Check the details and retry.'
+  } finally {
+    pending.value = false
+  }
 }
-// Button: <button :disabled="pending">Create event</button>
 ```
-## Simple example
 
-Save an event and navigate home only after the request succeeds.
+Replace the preview button with:
 
-## Remember
+```vue
+<button type="submit" :disabled="pending">{{ pending ? 'Saving…' : 'Create event' }}</button>
+```
 
-- Preserve form input when the request fails so the learner can retry.
+Remove the `<pre>` preview. After the form, add:
 
-## Best practices and edge cases
+```vue
+<p role="status">{{ message }}</p>
+<ul v-if="Object.keys(fieldErrors).length" role="alert">
+  <li v-for="(text, field) in fieldErrors" :key="field">{{ text }}</li>
+</ul>
+```
 
-- Use useFetch for an HTTP resource or useAsyncData with a custom fetcher during setup. Their payload integration avoids repeating the initial request during hydration.
-- Use $fetch for user-triggered mutations such as submitting a form, then refresh the affected list after success.
-- Pass a getter or computed URL when a request depends on a route parameter. Handle pending, error, empty, and successful results separately.
-- Calls sharing a data key share state. Keep their important options consistent and avoid keys that mix results from different users.
-- During SSR, relative useFetch requests can forward request context; a plain server-side $fetch does not automatically forward the browser’s cookies.
+With the session and database ready, create a fictional “Book club meetup”. Successful saving returns home and shows an “Event created” notification. This **toast** is supplied by Nuxt UI; it requires the `<UApp>` wrapper from topic 56.
+
+Check the database: the event should have the current user's owner ID and `pending` status. The home list is added in topic 76, so a saved event is not yet displayed there.
+
+The button is disabled while the request runs. Failure leaves the fields untouched. Clearing event-data keys after success ensures an existing list will reload when revisited. The request deliberately sends no owner or status; the server controls both.
 
 ## Official documentation
 
-- [Nuxt 4: Data Fetching](https://nuxt.com/docs/4.x/getting-started/data-fetching)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
-
-## Package references for these examples
-
-- [Nuxt Auth Utils setup and session helpers](https://nuxt.com/modules/auth-utils)
-- [Nuxt UI setup](https://nuxt.com/modules/ui)
+- [Nuxt 4: Data fetching — $fetch actions](https://nuxt.com/docs/4.x/getting-started/data-fetching)
+- [Nuxt 4: clearNuxtData](https://nuxt.com/docs/4.x/api/utils/clear-nuxt-data)
+- [Nuxt UI: useToast](https://ui.nuxt.com/docs/composables/use-toast)
+- [Nuxt 4: API route protection](https://nuxt.com/docs/4.x/guide/recipes/sessions-and-authentication#protect-api-routes)
 
 [Back to course index](00-course-index.md)

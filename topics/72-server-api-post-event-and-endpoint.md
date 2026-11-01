@@ -2,121 +2,97 @@
 
 Course section: 6: Practice app: EventO
 
-## What you will learn
+Creating an event requires a verified user and valid event details. The browser supplies the content; the server supplies the owner.
 
-Create an event from an authenticated request.
+**Additional working example:** Complete the session setup, database helper, and Event model first. Create these three files in `evento`.
 
-In this lesson, **POST** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
+### Check the session user
 
-## Key vocabulary
-
-- **POST:** An HTTP method commonly used to create a resource or submit an action.
-- **Session:** Information used by the server and client to recognize a signed-in user across requests.
-- **Ownership check:** A server-side check that a record belongs to, or is accessible by, the current user.
-- **Request body:** Data sent inside an HTTP request, often used for form submissions.
-
-## What this topic includes
-
-Requires nuxt-auth-utils (56), connectDB (61), the complete Event model (71), and eventSchema from lesson 74. Create those files before running the complete POST handler. Setup fragments show the stages; the final block combines them.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Database connection
-
-Read the private setting in the current request and await the shared connection utility.
-
-**Where:** server/api/events/index.post.js — database stage
+`server/utils/requirePlannerUser.js`:
 
 ```js
-async function prepareDatabase(event) {
-  await connectDB(useRuntimeConfig(event).mongodbUri)
-}
-// Inside a protected handler: await prepareDatabase(event)
-```
-
-### 2. Request body
-
-The server reads the payload and keeps only validated fields.
-
-**Where:** server/api/events/index.post.js — body stage
-
-```js
-import { eventSchema } from '../../utils/schemas/event'
-async function readEventInput(event) {
-  return await eventSchema.validate(await readBody(event), { stripUnknown: true })
-}
-// Inside the handler: const input = await readEventInput(event)
-```
-
-### 3. Session check
-
-requireUserSession stops signed-out requests with 401. The saved session must include user.id from the sign-in lessons.
-
-**Where:** server/api/whoami.get.js
-
-```js
-export default defineEventHandler(async event => {
+export async function requirePlannerUser(event) {
   const { user } = await requireUserSession(event)
-  if (!user.id) throw createError({ statusCode: 401, statusMessage: 'Sign in again' })
-  return { id: user.id }
-})
+  if (typeof user.id !== 'string' || !/^[a-f\d]{24}$/i.test(user.id)) {
+    throw createError({ status: 401, statusText: 'Sign in again' })
+  }
+  return user
+}
 ```
 
-### 4. Model creation
+`requireUserSession` rejects signed-out requests. The extra check ensures this app has the MongoDB user ID expected by its queries. The pattern accepts 24 hexadecimal characters.
 
-Validate, connect, and create an event owned by the verified user. Expected result: 201 and the created event.
+### Check the submitted event
 
-**Where:** server/api/events/index.post.js — complete handler
+`server/utils/validateEventBody.js`:
 
 ```js
 import * as yup from 'yup'
-import Event from '../../models/Event'
-import { eventSchema } from '../../utils/schemas/event'
-export default defineEventHandler(async event => {
-  const { user } = await requireUserSession(event)
-  if (!user.id) throw createError({ statusCode: 401, statusMessage: 'Sign in again' })
-  let input
-  try { input = await eventSchema.validate(await readBody(event), { abortEarly: false, stripUnknown: true }) }
-  catch (error) {
-    if (error instanceof yup.ValidationError) throw createError({ statusCode: 400, statusMessage: 'Validation failed', data: { fields: Object.fromEntries(error.inner.map(issue => [issue.path || 'form', issue.message])) } })
-    throw error
+
+function isCalendarDate(value) {
+  if (value == null) return true
+  if (!/^(?!0000)\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const parsed = new Date(`${value}T00:00:00.000Z`)
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+}
+
+const schema = yup.object({
+  title: yup.string().strict().trim().min(3).max(120).required(),
+  content: yup.string().strict().trim().min(3).max(5000).required(),
+  date: yup.string().strict().nullable().test('calendar-date', 'Invalid date', isCalendarDate)
+}).required()
+
+export async function validateEventBody(body) {
+  try {
+    return await schema.validate(body, { abortEarly: false, stripUnknown: true })
+  } catch (error) {
+    if (!(error instanceof yup.ValidationError)) throw error
+    const fields = {}
+    for (const issue of error.inner) {
+      if (issue.path === 'title') fields.title = 'Use a title of 3–120 characters without outer spaces.'
+      if (issue.path === 'content') fields.content = 'Use a description of 3–5000 characters without outer spaces.'
+      if (issue.path === 'date') fields.date = 'Choose a real date in YYYY-MM-DD format, or leave it empty.'
+    }
+    throw createError({ status: 400, statusText: 'Validation failed', data: { fields } })
   }
+}
+```
+
+The form already trims text and sends an empty optional date as `null`. Strict string rules reject unexpected types rather than converting them. In strict mode, `trim()` checks that text is already trimmed. The date check compares the parsed day with the original, rejecting impossible dates that JavaScript might otherwise roll into another month.
+
+### Save allowed fields
+
+`server/api/events/index.post.js`:
+
+```js
+import Event from '../../models/Event.js'
+
+export default defineEventHandler(async (event) => {
+  const user = await requirePlannerUser(event)
+  const input = await validateEventBody(await readBody(event))
   await connectDB(useRuntimeConfig(event).mongodbUri)
-  const created = await Event.create({ title: input.title, content: input.content, date: input.date ?? null, owner: user.id })
+  const created = await Event.create({
+    title: input.title, content: input.content, date: input.date ?? null,
+    owner: user.id
+  })
   setResponseStatus(event, 201)
-  return created
+  return {
+    id: String(created._id), title: created.title, content: created.content,
+    date: created.date, status: created.status
+  }
 })
 ```
-## Simple example
 
-The handler checks the session, associates the user, and saves the event.
+Only allowed fields are saved. A submitted `owner` or `status` is ignored; ownership comes from the session and the model supplies `pending`. The response contains the fields the page needs, not the entire document.
 
-## Remember
-
-- Reject unauthenticated writes and do not trust a client-supplied owner ID.
-
-## Best practices and edge cases
-
-- Keep secrets and database operations in the root server directory. Read private settings through runtime configuration.
-- Treat body fields, query parameters, and route parameters as untrusted input. Validate before using them in database operations.
-- Return useful HTTP status codes and safe messages. Avoid sending stack traces, connection strings, or password hashes to the client.
-- Server middleware runs before handlers: attach request context there and avoid returning a normal response from middleware.
-- Authenticate the request and scope record queries to its verified owner; hiding a button or accepting a client-provided user ID does not enforce ownership.
-
-## Practical tip
-
-Create two test users and verify that one cannot read, modify, or delete an event owned by the other.
+Topic 73 connects the form. A successful request should return status 201. A signed-out request should return 401 before database work, and invalid content should return 400. Topic 74 explains focused validation checks using this already complete endpoint.
 
 ## Official documentation
 
-- [Nuxt 4: Server](https://nuxt.com/docs/4.x/directory-structure/server)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
-
-## Package references for these examples
-
-- [Nuxt Auth Utils setup and session helpers](https://nuxt.com/modules/auth-utils)
-- [Yup schema and validation API](https://github.com/jquense/yup)
-- [Mongoose models and queries](https://mongoosejs.com/docs/guide.html)
+- [Nuxt 4: Server — request handling](https://nuxt.com/docs/4.x/directory-structure/server)
+- [Nuxt 4: Protect API routes](https://nuxt.com/docs/4.x/guide/recipes/sessions-and-authentication#protect-api-routes)
+- [Auth Utils: Server utilities](https://github.com/atinux/nuxt-auth-utils#server-utils)
+- [Yup: Strict validation and tests](https://github.com/jquense/yup)
+- [Mongoose: Schemas](https://mongoosejs.com/docs/guide.html)
 
 [Back to course index](00-course-index.md)

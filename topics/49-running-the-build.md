@@ -2,77 +2,50 @@
 
 Course section: 4: Building
 
-## What you will learn
+A **build** prepares the app to run outside the development server. A Node server build includes both browser files and the server handlers needed for forms and database requests.
 
-Build the application with its server runtime.
-
-In this lesson, **Build** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Build:** The process that prepares application code and assets for deployment.
-- **Deployment:** Making a built application available in its target hosting environment.
-- **Nitro:** The server engine used by Nuxt for backend routes and deployment output.
-- **Environment variable:** A setting supplied by the environment where a process runs.
-
-## What this topic includes
-
-Use these commands from an existing project root. Configure production environment variables before starting the built server.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Production build
-
-Create production output with the project’s build script.
-
-**Where:** Terminal
+**Additional walkthrough:** Return to `employee-lab`. Keep its JSON Server running on port 3001. Stop Nuxt's development server with Ctrl+C so port 3000 is free, then run from the project root:
 
 ```sh
 npm run build
 ```
 
-### 2. Output directory
-
-A standard Node server build includes a server entry and public assets.
-
-**Where:** Build output structure
+For a standard Node server build, the result includes:
 
 ```text
 .output/
-  server/index.mjs
   public/
+  server/index.mjs
 ```
 
-### 3. Local preview
-
-Run the built Node server and test direct reloads, form submissions, and missing routes.
-
-**Where:** Terminal
+Start the built server on macOS or Linux:
 
 ```sh
-node .output/server/index.mjs
-# Alternatively use the generated project’s preview script if present:
-# npm run preview
+NODE_ENV=production node .output/server/index.mjs
 ```
-## Simple example
 
-The course runs `npm run build` and previews the resulting server application.
+In Windows PowerShell, use:
 
-## Remember
+```powershell
+$env:NODE_ENV = 'production'
+node .output/server/index.mjs
+```
 
-- Development success does not replace checking the production build.
+Open the address printed in the terminal. Check `/employees`, reload a detail page directly, and create a disposable employee. The API should still run because this output includes the Nuxt server.
 
-## Best practices and edge cases
+If your environment selects a different deployment target automatically, explicitly use the `node-server` preset for this local Node exercise. Other hosts may require different output and startup instructions.
 
-- Universal rendering produces HTML on the server, then hydrates it in the browser. Initial markup must agree in both environments.
-- A static deployment serves generated files and cannot execute your Nuxt API handlers. Keep a server deployment or a separately hosted backend for dynamic writes.
-- Pre-rendered data is captured during the build. Keep private or frequently changing user data out of shared generated output.
-- Use routeRules to choose rendering behavior for specific paths. Verify dynamic routes and direct page reloads in the production build.
+## Supply settings when the server runs
+
+Nuxt reads `.env` during development and building, but the built server does not automatically read that file. Supply settings through your terminal or hosting environment. The employee service address can be overridden with `NUXT_EMPLOYEE_API_BASE`.
+
+A local address such as `127.0.0.1:3001` refers to the machine running the built server. Publishing Nuxt elsewhere does not publish your laptop's JSON Server. This remains a local practice setup.
+
+Use `npx nuxt generate` for a purely static site; use a server build when the app needs server operations. Check the built output, because a working development session does not prove the deployment setup works.
 
 ## Official documentation
 
-- [Nuxt 4: Rendering](https://nuxt.com/docs/4.x/guide/concepts/rendering)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Deployment — Node.js server](https://nuxt.com/docs/4.x/getting-started/deployment#nodejs-server)
+- [Nuxt 4: Runtime configuration](https://nuxt.com/docs/4.x/guide/going-further/runtime-config)
 
 [Back to course index](00-course-index.md)

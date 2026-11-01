@@ -2,107 +2,71 @@
 
 Course section: 5: Authentication
 
-## What you will learn
+**Validation** checks whether values meet your rules. Browser checks provide quick feedback. They do not protect the server, because a caller can send requests without using your form.
 
-Validate authentication input in the browser.
+Yup describes rules in a **schema**: a definition of the fields and values you accept. It was installed in topic 56.
 
-In this lesson, **Yup** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Yup:** A library used in the course to define input-validation schemas.
-- **Schema:** A definition of expected fields, value types, and rules.
-- **Validation:** Checking that input meets your rules before accepting or storing it.
-- **Request body:** Data sent inside an HTTP request, often used for form submissions.
-
-## What this topic includes
-
-Install Yup with npm install yup. Page script snippets illustrate individual validation concepts; the final block is a complete mini-form.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Yup schema
-
-A schema declares the expected input shape in one reusable object.
-
-**Where:** app/pages/login.vue — script setup
+**Additional example:** In `app/pages/login.vue`, add these lines inside `<script setup>`:
 
 ```js
 import * as yup from 'yup'
-const schema = yup.object({ email: yup.string().email().required(), password: yup.string().min(12).required() })
+
+const signupSchema = yup.object({
+  email: yup.string().trim().lowercase().email('Enter a valid email').max(254).required('Email is required'),
+  password: yup.string().min(12, 'Use at least 12 characters').max(128, 'Use at most 128 characters').required('Password is required')
+})
+const fieldErrors = ref({})
+
+async function validateSignup() {
+  fieldErrors.value = {}
+  try {
+    return await signupSchema.validate(form, { abortEarly: false, stripUnknown: true })
+  } catch (error) {
+    if (!(error instanceof yup.ValidationError)) throw error
+    for (const issue of error.inner) {
+      if (issue.path && !fieldErrors.value[issue.path]) {
+        fieldErrors.value[issue.path] = issue.message
+      }
+    }
+    return null
+  }
+}
 ```
 
-### 2. Required values
-
-required rejects a missing or empty password; min adds a length rule.
-
-**Where:** app/pages/login.vue — script setup
+Replace the existing `submit` function with:
 
 ```js
-import * as yup from 'yup'
-const passwordRule = yup.string().required('Password is required').min(12, 'Use at least 12 characters')
-const valid = await passwordRule.isValid('short') // false
+async function submit() {
+  message.value = ''
+  if (mode.value !== 'sign-up') {
+    message.value = 'Sign-in is connected in topic 66.'
+    return
+  }
+  const input = await validateSignup()
+  if (input) message.value = 'Details passed the checks. No account has been saved yet.'
+}
 ```
 
-### 3. Email format
-
-An email rule checks the format but does not prove that the address belongs to the user.
-
-**Where:** app/pages/login.vue — script setup
-
-```js
-import * as yup from 'yup'
-const emailRule = yup.string().email('Enter a valid email').required()
-const valid = await emailRule.isValid('not-an-email') // false
-```
-
-### 4. Field errors
-
-Catch a Yup error and show a field-specific message. The server must repeat validation independently.
-
-**Where:** app/pages/login.vue
+Inside the existing template, add these messages immediately after their corresponding input labels:
 
 ```vue
-<script setup>
-import * as yup from 'yup'
-const email = ref('')
-const emailError = ref('')
-async function submit() {
-  emailError.value = ''
-  try { await yup.string().email('Invalid email').required('Email required').validate(email.value) }
-  catch (error) { if (error instanceof yup.ValidationError) emailError.value = error.message; else throw error }
-}
-</script>
-<template><form @submit.prevent="submit"><label>Email <input v-model="email" aria-describedby="email-error" /></label><p id="email-error">{{ emailError }}</p><button>Check</button></form></template>
+<p id="email-error" role="alert">{{ fieldErrors.email }}</p>
 ```
-## Simple example
 
-An invalid email displays a field-level message before submission.
+```vue
+<p id="password-error" role="alert">{{ fieldErrors.password }}</p>
+```
 
-## Remember
+Add `aria-describedby="email-error"` to the email input and `aria-describedby="password-error"` to the password input. In `switchMode`, add `fieldErrors.value = {}` so old errors disappear.
 
-- Client validation helps usability; the server must validate independently.
+Try a valid email and a 12-character made-up password. The success message should appear. To inspect Yup's own errors for short passwords or malformed emails, temporarily add `novalidate` to the form; otherwise the browser may catch them first. Remove it after the check if you want both layers.
 
-## Best practices and edge cases
-
-- Use SSR-aware shared state such as useState or a properly configured Pinia integration. A module-level reactive object can leak state across server requests.
-- Initialize browser-only work after mount. Avoid rendering different initial markup based on localStorage, browser time zones, or random values.
-- Keep serialized state simple and safe: never place passwords or private server credentials in client-visible state.
-- Restore display state from the authenticated session after reload. Clear stale user data and fetched results when the account changes or signs out.
-
-## Practical tip
-
-Test empty input, malformed email, and a server validation error returned after client validation succeeds.
+`abortEarly: false` collects multiple errors. `stripUnknown` removes fields absent from the schema. The returned `input` contains the checked, normalised values. These examples lower-case account emails consistently; they never trim passwords. Email-format validation does not prove that someone owns the mailbox.
 
 ## Official documentation
 
-- [Nuxt 4: State Management](https://nuxt.com/docs/4.x/getting-started/state-management)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
-
-## Package references for these examples
-
-- [Nuxt Auth Utils setup and session helpers](https://nuxt.com/modules/auth-utils)
-- [Yup schema and validation API](https://github.com/jquense/yup)
+- [Nuxt 4: Sessions and authentication — input checks](https://nuxt.com/docs/4.x/guide/recipes/sessions-and-authentication)
+- [Nuxt 4: Data fetching — form actions](https://nuxt.com/docs/4.x/getting-started/data-fetching)
+- [Yup: official validation API](https://github.com/jquense/yup#schemavalidatevalue-any-options-object-promiseinfertypeschema-validationerror)
 
 [Back to course index](00-course-index.md)

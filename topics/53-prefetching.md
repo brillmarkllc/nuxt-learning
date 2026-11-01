@@ -2,72 +2,39 @@
 
 Course section: 4: Building
 
-## What you will learn
+**Prefetching** loads resources a visitor may need before they click a link. This can make the next page feel quicker, at the cost of doing some network work early.
 
-Prepare linked pages before the user visits them.
+`NuxtLink` normally considers prefetching internal links when they become visible. Nuxt avoids some unsuitable conditions, such as an offline or very slow connection. Prefetching prepares resources; it does not mean every request a page might make has already finished.
 
-In this lesson, **Prefetching** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Prefetching:** Loading likely-needed resources before the user navigates to them.
-- **NuxtLink:** Nuxt’s component for linking between pages with router integration.
-- **Lazy loading:** Downloading code or another resource only when it is needed.
-- **Payload:** Data sent with a request or transferred from server rendering to the browser.
-
-## What this topic includes
-
-Create /reports before using these links. Inspect network requests in a production preview to study prefetching.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. NuxtLink prefetching
-
-NuxtLink can prefetch the destination’s resources before navigation.
-
-**Where:** app/pages/index.vue
+**Additional example:** In `render-lab`, create `app/pages/prefetch-demo.vue`:
 
 ```vue
-<template><NuxtLink to="/reports">Reports</NuxtLink></template>
+<template>
+  <main>
+    <h1>Three ways to prepare a link</h1>
+    <p><NuxtLink to="/about">About: default behaviour</NuxtLink></p>
+    <p>
+      <NuxtLink to="/books/101" prefetch-on="interaction">
+        Book 101: prepare on hover or focus
+      </NuxtLink>
+    </p>
+    <p>
+      <NuxtLink to="/books/102" no-prefetch>
+        Book 102: load when opened
+      </NuxtLink>
+    </p>
+  </main>
+</template>
 ```
 
-### 2. Resource loading
+Keep the destination pages from topics 47 and 50. Build and run the server as in topic 49. Open `/prefetch-demo` and inspect the browser's Network panel. Hover over or keyboard-focus the second link, then follow it. The third link should not ask Nuxt to prefetch merely because it is shown.
 
-Choose interaction as the prefetch trigger for a link rather than loading it as soon as it is visible.
+Cached resources can make requests hard to spot, so use a fresh browser session when comparing behaviour. Development mode is not a reliable substitute for this production check.
 
-**Where:** app/pages/index.vue
-
-```vue
-<template><NuxtLink to="/reports" prefetch-on="interaction">Reports</NuxtLink></template>
-```
-
-### 3. Per-link controls
-
-Disable prefetch only for this particular link when eager loading is not useful.
-
-**Where:** app/pages/index.vue
-
-```vue
-<template><NuxtLink to="/reports" :prefetch="false">Reports</NuxtLink></template>
-```
-## Simple example
-
-Disable prefetch on a rarely used link when early loading is unnecessary.
-
-## Remember
-
-- Prefetching trades network work now for potentially faster navigation later.
-
-## Best practices and edge cases
-
-- Use NuxtLink for internal navigation. Prefetching may improve navigation speed but increases early network work.
-- Tune prefetch behavior for large or rarely visited destinations and check behavior in a production build.
-- Use appropriate external-link handling for off-site URLs and provide meaningful link labels.
+Keep the default unless there is a reason to change it. Interaction-based prefetching can suit a large menu with many rarely used destinations. Disabling it on every link may make navigation slower.
 
 ## Official documentation
 
-- [Nuxt 4: Nuxt Link](https://nuxt.com/docs/4.x/api/components/nuxt-link)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: NuxtLink — prefetch links](https://nuxt.com/docs/4.x/api/components/nuxt-link#prefetch-links)
 
 [Back to course index](00-course-index.md)

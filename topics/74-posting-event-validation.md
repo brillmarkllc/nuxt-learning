@@ -2,104 +2,46 @@
 
 Course section: 6: Practice app: EventO
 
-## What you will learn
+An event can pass the browser's checks and still arrive as invalid input. Test the server directly so browser validation cannot hide a missing backend check.
 
-Validate event input and display errors.
+The endpoint from topic 72 already calls `validateEventBody` before saving. Keep that helper; do not replace it with a weaker second schema.
 
-In this lesson, **Validation** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
+| Input | Expected outcome |
+| --- | --- |
+| Title shorter than 3 characters | 400 with a title error |
+| Description longer than 5000 characters | 400 with a content error |
+| Date `2026-02-31` | 400 with a date error |
+| Date `null` | Accepted if other fields are valid |
+| Numeric title instead of text | 400 |
+| Submitted `owner` or `status` | Ignored; server chooses them |
 
-## Key vocabulary
+## Try an invalid request
 
-- **Validation:** Checking that input meets your rules before accepting or storing it.
-- **Schema:** A definition of expected fields, value types, and rules.
-- **Yup:** A library used in the course to define input-validation schemas.
-- **Date format:** The representation of a date, such as an ISO string or a displayed calendar date.
-
-## What this topic includes
-
-Install Yup. The complete schema in the final block is imported by lesson 72. These rules match the event model’s string-based calendar-date policy.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Server schema
-
-A schema groups the event input rules; the full definition follows in the nullable-dates example.
-
-**Where:** server/utils/schemas/event.js — schema shape
+**Additional example:** While signed in to EventO, open the browser console and run:
 
 ```js
-import * as yup from 'yup'
-export const eventSchema = yup.object({ title: yup.string().required(), content: yup.string().required() })
-```
-
-### 2. Required fields
-
-required rejects an empty value; trim ensures whitespace-only titles also fail.
-
-**Where:** A schema file
-
-```js
-import * as yup from 'yup'
-const titleRule = yup.string().trim().required('Title is required')
-const valid = await titleRule.isValid('   ') // false
-```
-
-### 3. Minimum lengths
-
-Minimum and maximum lengths make requirements explicit and bound the input size.
-
-**Where:** A schema file
-
-```js
-import * as yup from 'yup'
-const contentRule = yup.string().trim().min(3, 'Use at least 3 characters').max(5000).required()
-```
-
-### 4. Nullable dates
-
-Normalize an empty date to null. A round-trip calendar check rejects dates such as February 31 instead of silently shifting them.
-
-**Where:** server/utils/schemas/event.js — complete schema
-
-```js
-import * as yup from 'yup'
-function validCalendarDate(value) {
-  if (value == null) return true
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
-  const date = new Date(`${value}T00:00:00.000Z`)
-  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
-}
-export const eventSchema = yup.object({
-  title: yup.string().trim().min(3).max(120).required(),
-  content: yup.string().trim().min(3).max(5000).required(),
-  date: yup.string().transform((value, original) => original === '' ? null : value).nullable().default(null).test('calendar-date', 'Use a valid YYYY-MM-DD date', validCalendarDate),
+const response = await fetch('/api/events', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ title: 'Hi', content: 'A reading meetup', date: '2026-02-31' })
 })
+console.log(response.status, await response.json())
 ```
-## Simple example
 
-An empty title produces a field error; an optional empty date is treated consistently.
+Expect 400 with title and date messages. No event should be added to the database. The form from topic 73 displays the same `fields` object returned by the server.
 
-## Remember
+## Why check the calendar?
 
-- Apply the validation before storing data, not after creation.
+A value can look like `YYYY-MM-DD` and still be impossible. JavaScript can shift an invalid day into the following month. The helper parses the value and compares the resulting date with the submitted text; a mismatch fails validation.
 
-## Best practices and edge cases
+The form turns an empty date into `null` before sending it. A direct request containing `date: ''` is rejected: the API's accepted empty value is explicitly `null` or an omitted field.
 
-- Keep secrets and database operations in the root server directory. Read private settings through runtime configuration.
-- Treat body fields, query parameters, and route parameters as untrusted input. Validate before using them in database operations.
-- Return useful HTTP status codes and safe messages. Avoid sending stack traces, connection strings, or password hashes to the client.
-- Server middleware runs before handlers: attach request context there and avoid returning a normal response from middleware.
-- Authenticate the request and scope record queries to its verified owner; hiding a button or accepting a client-provided user ID does not enforce ownership.
+Yup's strict text rules also reject surrounding spaces. The form trims those before submitting, while direct API callers must follow the same contract. The model provides another layer of field limits; it does not replace request validation or owner checks.
 
 ## Official documentation
 
-- [Nuxt 4: Server](https://nuxt.com/docs/4.x/directory-structure/server)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
-
-## Package references for these examples
-
-- [Nuxt Auth Utils setup and session helpers](https://nuxt.com/modules/auth-utils)
-- [Yup schema and validation API](https://github.com/jquense/yup)
+- [Nuxt 4: Server — validated input](https://nuxt.com/docs/4.x/directory-structure/server#body-handling)
+- [Nuxt 4: createError — structured error data](https://nuxt.com/docs/4.x/api/utils/create-error)
+- [Yup: Validation and custom tests](https://github.com/jquense/yup)
 
 [Back to course index](00-course-index.md)

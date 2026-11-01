@@ -2,87 +2,40 @@
 
 Course section: 4: Building
 
-## What you will learn
+A **Nuxt module** adds an integration, such as image handling or a sitemap. Modules can register components, add configuration, and set up other tools when Nuxt starts or builds.
 
-Extend Nuxt with packaged integrations.
+An app plugin runs as part of the Vue app's startup. A module works on Nuxt's setup and may register plugins for you.
 
-In this lesson, **Module** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
+## Add a sitemap
 
-## Key vocabulary
+A sitemap is a machine-readable list of public page addresses. Search engines can use it to discover pages.
 
-- **Module:** A package or integration that can extend Nuxt’s build setup and configuration.
-- **Dependency:** A package your project needs to build or run.
-- **Plugin:** Code that extends or initializes a running Nuxt application.
-- **Build:** The process that prepares application code and assets for deployment.
+**Additional walkthrough:** Use the public `render-lab` project. The current Sitemap module requires Nuxt 4.6 or newer within Nuxt 4, and Node 22.22.3+, 24.15.0+, or 26+. Check compatibility before installing.
 
-## What this topic includes
-
-This uses the optional @nuxtjs/sitemap module. Only list public routes in its output.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Modules catalog
-
-Open the official module catalog and choose the sitemap integration.
-
-**Where:** Terminal
-
-```sh
-# macOS; on another OS open the URL in your browser.
-open https://nuxt.com/modules/sitemap
-```
-
-### 2. Installation
-
-Install and register the sitemap module through Nuxt’s module command.
-
-**Where:** Terminal
+From the project root, run:
 
 ```sh
 npx nuxt module add sitemap
 ```
 
-### 3. Configuration
+The command installs the package and updates `nuxt.config.ts`. Check that the existing `modules` list contains `'@nuxtjs/sitemap'` once. Preserve other settings.
 
-Set the public canonical site URL and register the installed module. Replace the sample domain.
-
-**Where:** nuxt.config.ts
+Add the public site address inside the same configuration object:
 
 ```ts
-export default defineNuxtConfig({ modules: ['@nuxtjs/sitemap'], site: { url: 'https://example.com' } })
+site: { url: 'https://example.com' }
 ```
 
-### 4. Sitemap example
+`example.com` is an illustrative address. Replace it with your real public domain before publishing; do not invent one for local testing.
 
-Start the project, then inspect the generated sitemap in another terminal.
+Start `npm run dev` and open `/sitemap.xml`. You should see XML describing discovered page addresses. Check that only intended public pages are listed. A sitemap does not create missing pages and is not access control.
 
-**Where:** Terminal
-
-```sh
-curl http://localhost:3000/sitemap.xml
-# Check that public pages appear and private account routes do not.
-```
-## Simple example
-
-Add a sitemap integration and configure the public routes it should expose.
-
-## Remember
-
-- Each module has its own setup and compatibility requirements.
-
-## Best practices and edge cases
-
-- A module can change build configuration and register integrations; an application plugin extends a running application. Choose the appropriate layer.
-- Follow each module’s own version and configuration requirements and verify the production build after adding it.
-
-## Try it yourself
-
-Rebuild the example above, then test it with a direct page reload and navigation from another page. Check both the browser console and server terminal for errors.
+Nuxt's module catalogue links to each module's own documentation. Read that documentation for package-specific requirements; the Nuxt core guide cannot specify every integration. After adding a module, run your project's build command to check that its setup works beyond development.
 
 ## Official documentation
 
 - [Nuxt 4: Modules](https://nuxt.com/docs/4.x/guide/concepts/modules)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Module command](https://nuxt.com/docs/4.x/api/commands/module)
+- [Nuxt Sitemap: Installation (package reference)](https://nuxtseo.com/docs/sitemap/getting-started/installation)
 
 [Back to course index](00-course-index.md)

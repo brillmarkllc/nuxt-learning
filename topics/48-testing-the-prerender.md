@@ -2,75 +2,39 @@
 
 Course section: 4: Building
 
-## What you will learn
+Test generated files with a static file server. The development server can hide deployment problems because it still runs all your server code.
 
-Test the limitations of a static export.
-
-In this lesson, **Static hosting** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Static hosting:** Hosting that serves generated files without running your Nuxt server handlers.
-- **Endpoint:** A URL and HTTP method that a server handles, such as POST /api/events.
-- **Deployment:** Making a built application available in its target hosting environment.
-- **Prerendering:** Creating a route’s HTML ahead of requests, usually during the build.
-
-## What this topic includes
-
-Generate your app first with npx nuxt generate. Install no global server; the command below runs a local static preview through npx.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Static hosting
-
-Serve only the public output to test what a static host can actually run.
-
-**Where:** Terminal
+**Additional walkthrough:** In `render-lab`, generate the pages from topic 47, then serve only the output:
 
 ```sh
+npx nuxt generate
 npx serve .output/public
 ```
 
-### 2. Missing server handlers
+Open the address printed by `serve`. If it offers to install its package, allow that local preview tool to run.
 
-Replace PORT with the port printed by serve. This tests a route that is not backed by a running Nuxt server.
+1. Open the home page and follow the About link.
+2. Open `/about` directly in a new browser tab and reload it. The same page should appear.
+3. Edit the about page's source text while keeping this preview running. The preview should still show the old output. Run generate again and refresh to see the new version.
 
-**Where:** Another terminal
+The third check demonstrates the snapshot: changing source files does not update an already generated site.
 
-```sh
-curl -i http://localhost:PORT/api/employees
-# A static file server cannot execute server/api/employees/index.get.js.
-```
+## Check the server boundary
 
-### 3. Form behavior
-
-This test checks whether an API mutation really returns JSON; an HTML fallback is not a successful API response.
-
-**Where:** Browser console on the static preview
+A static host cannot execute files from `server/api/`. For example, run this in the browser console on the static preview:
 
 ```js
-fetch('/api/employees', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: 'Ada' }) })
-  .then(async response => console.log(response.status, response.headers.get('content-type'), await response.text()))
+const response = await fetch('/api/static-check', { method: 'POST' })
+console.log(response.status, response.headers.get('content-type'))
 ```
-## Simple example
 
-A generated employee list may display while its add form fails without a running API.
+No such API has been added to `render-lab`, so this should not report a successful API operation. Depending on the host, it may return a missing-page response or an HTML fallback. A successful-looking status alone is not proof that a form saved data; inspect the response and the stored result.
 
-## Remember
-
-- Pure static hosting cannot execute the Nuxt server handlers bundled in a server deployment.
-
-## Best practices and edge cases
-
-- Universal rendering produces HTML on the server, then hydrates it in the browser. Initial markup must agree in both environments.
-- A static deployment serves generated files and cannot execute your Nuxt API handlers. Keep a server deployment or a separately hosted backend for dynamic writes.
-- Pre-rendered data is captured during the build. Keep private or frequently changing user data out of shared generated output.
-- Use routeRules to choose rendering behavior for specific paths. Verify dynamic routes and direct page reloads in the production build.
+The employee app needs a running API for adding, editing, and deleting. Use a server build for that app, as shown next. A generated public list might display a snapshot while its write operations fail on static hosting.
 
 ## Official documentation
 
-- [Nuxt 4: Rendering](https://nuxt.com/docs/4.x/guide/concepts/rendering)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
+- [Nuxt 4: Prerendering — preview generated output](https://nuxt.com/docs/4.x/getting-started/prerendering)
+- [Nuxt 4: Static rendering limitations](https://nuxt.com/docs/4.x/guide/concepts/rendering#deploying-a-static-client-rendered-app)
 
 [Back to course index](00-course-index.md)

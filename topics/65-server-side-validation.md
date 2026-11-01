@@ -2,99 +2,70 @@
 
 Course section: 5: Authentication
 
-## What you will learn
+Server validation is the final check before information reaches the database. The sign-up endpoint already performs it. Moving that work into a helper makes the rules easier to maintain and lets the server return useful field errors.
 
-Enforce sign-up rules on the backend.
-
-In this lesson, **Validation** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Validation:** Checking that input meets your rules before accepting or storing it.
-- **Schema:** A definition of expected fields, value types, and rules.
-- **Yup:** A library used in the course to define input-validation schemas.
-- **HTTP status:** A response number describing an outcome, such as 200 for success or 404 for missing content.
-
-## What this topic includes
-
-Install Yup. These files form a minimal server-side validation endpoint; replace the demo response with your account-creation logic when integrating it.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Shared schema location
-
-Keep reusable validation definitions in a dedicated file and import nested schemas explicitly.
-
-**Where:** server/utils/schemas/signup.js
+**Additional example:** Create `server/utils/validateSignupBody.js`:
 
 ```js
 import * as yup from 'yup'
-export const signupSchema = yup.object({ email: yup.string().trim().lowercase().email().required(), password: yup.string().min(12).max(128).required() })
-```
 
-### 2. Yup validation
+const schema = yup.object({
+  email: yup.string().trim().lowercase().email().max(254).required(),
+  password: yup.string().strict().min(12).max(128).required()
+}).required()
 
-Validate directly submitted data even if the browser already validated it.
-
-**Where:** server/api/validate-signup.post.js
-
-```js
-import { signupSchema } from '../utils/schemas/signup'
-export default defineEventHandler(async event => {
-  const input = await signupSchema.validate(await readBody(event), { abortEarly: false, stripUnknown: true })
-  return { valid: true, email: input.email }
-})
-```
-
-### 3. Structured error response
-
-Return safe field messages with status 400. This response never returns the rejected password or the full validation exception.
-
-**Where:** server/api/validate-signup.post.js — improved replacement
-
-```js
-import * as yup from 'yup'
-import { signupSchema } from '../utils/schemas/signup'
-export default defineEventHandler(async event => {
+export async function validateSignupBody(body) {
   try {
-    const input = await signupSchema.validate(await readBody(event), { abortEarly: false, stripUnknown: true })
-    return { valid: true, email: input.email }
+    return await schema.validate(body, { abortEarly: false, stripUnknown: true })
   } catch (error) {
     if (!(error instanceof yup.ValidationError)) throw error
-    const fields = Object.fromEntries(error.inner.map(issue => [issue.path || 'form', issue.message]))
-    throw createError({ statusCode: 400, statusMessage: 'Validation failed', data: { fields } })
+    const fields = {}
+    for (const issue of error.inner) {
+      if (issue.path === 'email') fields.email = 'Enter a valid email of at most 254 characters.'
+      if (issue.path === 'password') fields.password = 'Use a password of 12–128 characters.'
+    }
+    throw createError({ status: 400, statusText: 'Validation failed', data: { fields } })
   }
-})
+}
 ```
-## Simple example
 
-Reject a malformed email even if the request bypasses the browser form.
+The helper returns the normalised input. It strips extra properties and returns only fixed, safe messages. Returning the whole validation exception could expose submitted values, including the password.
 
-## Remember
+In `server/api/auth/sign-up.post.js`, remove the Yup import, the inline schema, and the `let input`/validation `try`/`catch` block from topic 63. Start the handler with this instead:
 
-- Map validation failures to useful messages without leaking internal details.
+```js
+const input = await validateSignupBody(await readBody(event))
+```
 
-## Best practices and edge cases
+Keep the database, hashing, account creation, and session code after it. Nuxt auto-imports this top-level server utility.
 
-- Keep secrets and database operations in the root server directory. Read private settings through runtime configuration.
-- Treat body fields, query parameters, and route parameters as untrusted input. Validate before using them in database operations.
-- Return useful HTTP status codes and safe messages. Avoid sending stack traces, connection strings, or password hashes to the client.
-- Server middleware runs before handlers: attach request context there and avoid returning a normal response from middleware.
-- Sign-up and sign-in accept signed-out visitors. Protected account and event endpoints require a verified session and authorization checks.
+## Show server field errors
 
-## Practical tip
+In the `submit` function's `catch` block in `app/pages/login.vue`, add this before the existing general message:
 
-Test the endpoint directly with invalid input so browser validation cannot conceal missing server validation.
+```js
+fieldErrors.value = error.data?.data?.fields || {}
+```
+
+`$fetch` puts the JSON error response in `error.data`; the response's custom `data` contains `fields`. Optional chaining safely handles other error shapes.
+
+Test the endpoint without the form. Run this in the browser console on EventO:
+
+```js
+const response = await fetch('/api/auth/sign-up', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: 'not-an-email', password: 'short' })
+})
+console.log(response.status, await response.json())
+```
+
+Expect status 400 and safe field messages. No new user should be stored. Keep browser validation too: it provides quick feedback, while this server check covers direct requests.
 
 ## Official documentation
 
-- [Nuxt 4: Server](https://nuxt.com/docs/4.x/directory-structure/server)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
-
-## Package references for these examples
-
-- [Nuxt Auth Utils setup and session helpers](https://nuxt.com/modules/auth-utils)
-- [Yup schema and validation API](https://github.com/jquense/yup)
+- [Nuxt 4: Server — body handling and errors](https://nuxt.com/docs/4.x/directory-structure/server)
+- [Nuxt 4: Sessions and authentication — validated input](https://nuxt.com/docs/4.x/guide/recipes/sessions-and-authentication)
+- [Nuxt 4: createError — custom error data](https://nuxt.com/docs/4.x/api/utils/create-error)
+- [Yup: Validation API](https://github.com/jquense/yup)
 
 [Back to course index](00-course-index.md)

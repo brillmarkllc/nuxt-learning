@@ -2,99 +2,82 @@
 
 Course section: 6: Practice app: EventO
 
-## What you will learn
+An event starts as `pending`. Completing it changes its status to `completed`; the record remains stored. This example allows only that one-way change.
 
-Introduce the event completion workflow.
-
-In this lesson, **Status transition** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Status transition:** A change between allowed record states, such as pending to completed.
-- **Authorization:** Checking whether that user may perform an action on a particular resource.
-- **Ownership check:** A server-side check that a record belongs to, or is accessible by, the current user.
-- **Record:** One stored item, such as an employee or event.
-
-## What this topic includes
-
-Requires the event model, connection utility, and nuxt-auth-utils. Use PATCH for completion and DELETE for removal, giving each operation its own endpoint. This is a clearer variant of the course’s combined-action endpoint.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Pending/completed states
-
-Model status as one of two explicit values and display a readable label.
-
-**Where:** app/components/EventStatus.vue
-
-```vue
-<script setup>
-defineProps({ status: { type: String, required: true } })
-</script>
-<template><span>{{ status === 'completed' ? 'Completed' : 'Pending' }}</span></template>
-```
-
-### 2. Conditional actions
-
-Use with an item from v-for and the complete/remove functions in lesson 78. Disable controls while that record’s action is pending.
-
-**Where:** Inside an event-list template
-
-```vue
-<div><button v-if="item.status === 'pending'" :disabled="busyId === item._id" @click="complete(item._id)">Complete and archive</button><button v-else :disabled="busyId === item._id" @click="remove(item._id)">Delete</button></div>
-```
-
-### 3. Server action handling
-
-Atomically complete only a pending event owned by the signed-in user. A missing, foreign, or already-completed target returns 404.
-
-**Where:** server/api/events/[id].patch.js
+**Additional working example:** Create `server/api/events/[id].patch.js`:
 
 ```js
-import mongoose from 'mongoose'
-import Event from '../../models/Event'
-export default defineEventHandler(async event => {
-  const { user } = await requireUserSession(event)
+import Event from '../../models/Event.js'
+
+export default defineEventHandler(async (event) => {
+  const user = await requirePlannerUser(event)
   const id = getRouterParam(event, 'id')
-  if (!user.id) throw createError({ statusCode: 401, statusMessage: 'Sign in again' })
-  if (!id || !mongoose.isObjectIdOrHexString(id)) throw createError({ statusCode: 400, statusMessage: 'Invalid ID' })
+  if (!id || !/^[a-f\d]{24}$/i.test(id)) {
+    throw createError({ status: 400, statusText: 'Invalid event ID' })
+  }
   const body = await readBody(event)
-  if (body?.status !== 'completed') throw createError({ statusCode: 400, statusMessage: 'Unsupported status' })
+  if (body?.status !== 'completed') {
+    throw createError({ status: 400, statusText: 'Unsupported status change' })
+  }
   await connectDB(useRuntimeConfig(event).mongodbUri)
-  const updated = await Event.findOneAndUpdate({ _id: id, owner: user.id, status: 'pending' }, { $set: { status: 'completed' } }, { new: true, runValidators: true })
-  if (!updated) throw createError({ statusCode: 404, statusMessage: 'Pending event not found' })
-  return updated
+  const updated = await Event.findOneAndUpdate(
+    { _id: id, owner: user.id, status: 'pending' },
+    { $set: { status: 'completed' } },
+    { returnDocument: 'after', runValidators: true }
+  )
+  if (!updated) {
+    throw createError({ status: 404, statusText: 'Pending event not found' })
+  }
+  return { id: String(updated._id), status: updated.status }
 })
 ```
-## Simple example
 
-A pending event shows “Complete and archive”; a completed event shows “Delete”.
+The database matches the ID, verified owner, and current status in the same update. This avoids changing someone else's event or repeating a completed transition. `$set` changes just the allowed status. `returnDocument: 'after'` asks for the updated result, and `runValidators` enables update validation.
 
-## Remember
+A missing, foreign, or already completed event returns the same 404 message. The endpoint does not reveal which of those cases occurred.
 
-- Validate requested actions and record ownership on the server.
+## Add the completion button
 
-## Best practices and edge cases
+In `app/components/MyEvents.vue`, add inside the existing script:
 
-- Keep secrets and database operations in the root server directory. Read private settings through runtime configuration.
-- Treat body fields, query parameters, and route parameters as untrusted input. Validate before using them in database operations.
-- Return useful HTTP status codes and safe messages. Avoid sending stack traces, connection strings, or password hashes to the client.
-- Server middleware runs before handlers: attach request context there and avoid returning a normal response from middleware.
-- Authenticate the request and scope record queries to its verified owner; hiding a button or accepting a client-provided user ID does not enforce ownership.
+```js
+const busyId = ref(null)
+const actionMessage = ref('')
+async function complete(id) {
+  if (busyId.value) return
+  busyId.value = id
+  actionMessage.value = ''
+  try {
+    await $fetch(`/api/events/${encodeURIComponent(id)}`, {
+      method: 'PATCH', body: { status: 'completed' }
+    })
+    await refresh()
+  } catch {
+    actionMessage.value = 'Could not complete the event. Reload the list and retry.'
+  } finally {
+    busyId.value = null
+  }
+}
+```
 
-## Practical tip
+After each event's status paragraph, add:
 
-Accept only explicitly supported actions and legal state transitions; reject unknown action values.
+```vue
+<button v-if="item.status === 'pending'" :disabled="busyId !== null" @click="complete(item.id)">
+  Mark completed
+</button>
+```
+
+Add `<p role="status">{{ actionMessage }}</p>` after the event list, inside the section.
+
+Complete one of your pending events. The list should refresh, its status should become `completed`, and the completion button should disappear. It remains completed after reloading. Deletion is a separate operation, added next.
 
 ## Official documentation
 
-- [Nuxt 4: Server](https://nuxt.com/docs/4.x/directory-structure/server)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
-
-## Package references for these examples
-
-- [Nuxt Auth Utils setup and session helpers](https://nuxt.com/modules/auth-utils)
-- [Mongoose models and queries](https://mongoosejs.com/docs/guide.html)
+- [Nuxt 4: Server — methods and request checks](https://nuxt.com/docs/4.x/directory-structure/server)
+- [Nuxt 4: API protection](https://nuxt.com/docs/4.x/guide/recipes/sessions-and-authentication#protect-api-routes)
+- [Nuxt 4: Data fetching — refreshing data](https://nuxt.com/docs/4.x/getting-started/data-fetching)
+- [Mongoose: findOneAndUpdate](https://mongoosejs.com/docs/tutorials/findoneandupdate.html)
+- [Mongoose: Update validators](https://mongoosejs.com/docs/validation.html#update-validators)
 
 [Back to course index](00-course-index.md)

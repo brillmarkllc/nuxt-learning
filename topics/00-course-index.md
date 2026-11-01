@@ -1,8 +1,8 @@
 # Nuxt course study notes
 
-78 beginner-friendly lesson notes, in the original CSV order. Each includes a learning goal, key vocabulary with plain-English definitions, a simple example, important reminders, and practical developer guidance.
+78 practical topics in their original order. Start with the setup pages, then follow the examples one step at a time. Unfamiliar Vue and JavaScript syntax is explained where it first appears.
 
-Source: `the-complete-nuxt-js-course-welcome-to-the-server-side_transcripts.csv`. Examples are teaching illustrations rather than verbatim code from the videos. These notes follow the course conventions (including its `app/` directory structure); the added developer guidance links to the official Nuxt 4 documentation. Some transcript spelling and API-name errors have been normalized.
+Each topic links to the official Nuxt 4 pages used for its rewrite. Package-specific references are included where Nuxt relies on another tool. Examples created for these notes are labeled **Additional example** or **Additional walkthrough**.
 
 - [01. Introduction](01-introduction.md)
 - [02. Installing NODE](02-installing-node.md)
@@ -83,29 +83,22 @@ Source: `the-complete-nuxt-js-course-welcome-to-the-server-side_transcripts.csv`
 - [77. Handling status](77-handling-status.md)
 - [78. Deleting events](78-deleting-events.md)
 
-## How to study these notes
+## Projects used by the examples
 
-1. Read the learning goal and key vocabulary. You do not need to memorize every term.
-2. Work through the simple example and relate the new terms to the code or behavior.
-3. Review the reminders and edge cases, then try the practice check.
-4. Follow the official documentation link when you need a fuller explanation.
+- **learner-app (06–27):** Pages, reusable components, styles, navigation, and app behaviour.
+- **employee-lab (28–46):** A local employee app backed by JSON Server 0.17.4 on port 3001. Keep Nuxt and the data service running in separate terminals. Topic 30 supplies the private configuration, and topic 43 supplies the single-record GET endpoint before the edit form needs it.
+- **render-lab (47–55):** A separate public site for static generation, route rules, and performance examples. Topic 49 also explains how to run the employee app as a server build.
+- **evento (56–78):** An event planner with account forms, verified sessions, MongoDB records, and private event operations. Topic 56 sets up Nuxt 4.6+, Auth Utils 0.6, Nuxt UI 4, Pinia, Mongoose, and Yup. Topics 60–63 connect the database and create accounts. Topic 72 provides the event validation helper and POST endpoint together, before the form uses them.
 
-## Key vocabulary
+Paths in examples are relative to the named project's root. A complete file replaces that file's contents; a labeled fragment belongs in the existing file at the stated location. Preserve existing configuration properties when adding a new one.
 
-- **Lesson:** One topic to learn and practice before moving on.
-- **Example:** A small illustration of an idea; it may need surrounding project files to run.
-- **Edge case:** An unusual situation, such as missing data or a failed request, that your app should handle.
-- **Best practice:** A recommended approach that helps make an app reliable and maintainable.
-- **Official documentation:** Guidance published by the maintainers of the framework or package.
+The event planner stores optional dates as YYYY-MM-DD strings or null. Completion uses PATCH and deletion uses DELETE. Server queries enforce ownership using the verified session user. These are application choices for the additional examples.
 
-## Official documentation enrichment
+## Source gaps and version notes
 
-All 78 lessons include Nuxt 4 developer guidance, edge cases, practical checks, and an official reference. Related lessons share foundational advice; implementation patterns are included where useful. Nuxt documentation does not fully specify third-party authentication, database, validation, or UI packages.
+- The original lesson materials do not provide a verified source-repository URL or branch list. Topic 04 records this gap; the examples can be followed with fresh Nuxt starters.
+- The Nitro plugin guide linked at https://nitro.build/guide/plugins returned 404. Topic 40 uses accessible Nuxt server and lifecycle-hook documentation instead.
+- Nuxt's authentication recipe still describes NUXT_SESSION_PASSWORD. The current Auth Utils 0.6 package documentation replaces it with NUXT_APP_SECRET and requires Nuxt 4.6+. Topic 56 explains the difference and uses the package's current setup.
+- Image and font examples require the reader's own permitted files. Atlas credentials, a reachable database, and production environment settings must be supplied privately; they are not bundled with these notes.
 
-## Practical examples in every lesson
-
-Each item under “What this topic includes” now has a numbered subsection with code or commands, a file location, and an explanation of the expected behavior. Start with a working Nuxt 4 project; the setup paragraph in each lesson names additional packages or earlier lesson files it needs. Alternatives and fragments are labeled rather than presented as standalone applications.
-
-For the employee lab, use JSON Server on port 3001 and private runtimeConfig.employeeApiBase. For the EventO examples, follow the setup chain: modules (56), database connection (61), user model (62), account endpoints (63 and 66), event model (71), event validation (74), event POST (72), event GET (76), completion PATCH (77), and deletion DELETE (78). The validation file is deliberately needed before the POST handler.
-
-The practical EventO examples store optional calendar dates as YYYY-MM-DD strings, and use separate PATCH and DELETE endpoints for completion and deletion. These choices are explained in the relevant lessons.
+Nuxt does not define MongoDB, Mongoose, Yup, Pinia, or Nuxt UI APIs. Those topics include the relevant official package references alongside the matching Nuxt documentation.

@@ -2,110 +2,79 @@
 
 Course section: 5: Authentication
 
-## What you will learn
+**Authentication** checks who someone is. A **session** lets later requests recognise the signed-in person without asking for their password every time.
 
-Prepare the authentication practice application.
+## Create the event planner
 
-In this lesson, **Nuxt UI** is the main idea to recognize. Start with the example below, then use the vocabulary list whenever a term is unfamiliar.
-
-## Key vocabulary
-
-- **Nuxt UI:** An optional library of UI components used by the course application.
-- **Module:** A package or integration that can extend Nuxt’s build setup and configuration.
-- **Pinia:** A Vue state-management library for sharing application data across components.
-- **Authentication:** Checking who a user is, such as by verifying sign-in credentials.
-- **Session:** Information used by the server and client to recognize a signed-in user across requests.
-
-## What this topic includes
-
-These steps set up Nuxt UI v4, nuxt-auth-utils, Pinia, and Mongoose. Configure a real session secret before deployment. Keep all secrets outside Git.
-
-**How to use the examples:** Each numbered subsection covers one listed subtopic. Blocks labeled “script setup”, “inside”, or “fragment” belong in the indicated surrounding component or handler. Alternative versions replace one another; do not paste every block into a single file.
-
-### 1. Nuxt UI
-
-Install Nuxt UI and Tailwind. Create the CSS file containing the two imports shown below.
-
-**Where:** Terminal and app/assets/css/main.css
+**Additional working example:** Start a separate project for topics 56–78:
 
 ```sh
-npm install @nuxt/ui tailwindcss
-# app/assets/css/main.css:
-# @import "tailwindcss";
-# @import "@nuxt/ui";
-```
-
-### 2. Authentication utilities
-
-Add the authentication module and generate a random value for NUXT_SESSION_PASSWORD in your environment.
-
-**Where:** Terminal
-
-```sh
+npm create nuxt@latest evento
+cd evento
+npm install @nuxt/ui@4 tailwindcss mongoose yup
 npx nuxt module add auth-utils
-node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"
-# Put the generated value in .env as NUXT_SESSION_PASSWORD=...
+npx nuxt module add pinia
 ```
 
-### 3. Pinia
+Use Nuxt 4.6 or newer within Nuxt 4 and a compatible Node LTS release. These examples use Nuxt Auth Utils 0.6 and Nuxt UI 4. Check the installed versions in `package.json` and keep the lockfile.
 
-Add the Pinia module and the store library.
+Nuxt UI supplies styled components. Pinia supplies shared app state. Mongoose connects server code to MongoDB. Yup checks input. The later lessons explain each when it is used.
 
-**Where:** Terminal
-
-```sh
-npm install pinia @pinia/nuxt
-```
-
-### 4. Database setup
-
-Install Mongoose for server database models. Connection and credentials are configured in lessons 60–61.
-
-**Where:** Terminal
-
-```sh
-npm install mongoose
-```
-
-### 5. App configuration
-
-Register the installed modules and keep the database URI private. Wrap NuxtLayout/NuxtPage with UApp in app.vue for UI facilities such as toasts.
-
-**Where:** nuxt.config.ts
+Use this configuration in the root `nuxt.config.ts`, preserving any necessary generated settings:
 
 ```ts
 export default defineNuxtConfig({
   modules: ['@nuxt/ui', 'nuxt-auth-utils', '@pinia/nuxt'],
   css: ['~/assets/css/main.css'],
-  runtimeConfig: { mongodbUri: '' },
+  runtimeConfig: { mongodbUri: '' }
 })
 ```
-## Simple example
 
-Start an event planner with a header, login page, and protected event form.
+Create `app/assets/css/main.css`:
 
-## Remember
+```css
+@import "tailwindcss";
+@import "@nuxt/ui";
+```
 
-- The lesson integrates several modules; retain compatible course dependency versions.
+Replace `app/app.vue` with:
 
-## Best practices and edge cases
+```vue
+<template>
+  <UApp><NuxtPage /></UApp>
+</template>
+```
 
-- A module can change build configuration and register integrations; an application plugin extends a running application. Choose the appropriate layer.
-- Follow each module’s own version and configuration requirements and verify the production build after adding it.
+Create `app/pages/index.vue`:
 
-## Try it yourself
+```vue
+<template>
+  <main><h1>EventO</h1><p>Keep your meetups in one place.</p></main>
+</template>
+```
 
-Rebuild the example above, then test it with a direct page reload and navigation from another page. Check both the browser console and server terminal for errors.
+Run `npm run dev` and open the printed address. You should see EventO. No database is needed for this first screen.
+
+## Give sessions a private secret
+
+Generate a random value in your terminal:
+
+```sh
+node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
+```
+
+Save the generated value in the root `.env` as `NUXT_APP_SECRET=...`, replacing the dots. Keep `.env` ignored by Git and never put the value in page code. Supply the same environment setting to a deployed server; the built server does not automatically read `.env`.
+
+Version note: Nuxt's authentication recipe still describes `NUXT_SESSION_PASSWORD`. Auth Utils 0.6's package documentation replaces it with `NUXT_APP_SECRET` and requires Nuxt 4.6+. These examples follow the package's current setup. Do not mix the two versions' settings.
+
+Auth Utils needs a running Nuxt server. Use a server build for the finished app; static generation cannot run its session endpoints. The MongoDB connection is added in topics 60–61.
 
 ## Official documentation
 
+- [Nuxt 4: Sessions and authentication](https://nuxt.com/docs/4.x/guide/recipes/sessions-and-authentication)
 - [Nuxt 4: Modules](https://nuxt.com/docs/4.x/guide/concepts/modules)
-
-Reviewed against the official documentation on October 30, 2026. Practical checks and security recommendations are developer guidance applied to the lesson. Authentication, MongoDB, Yup, and UI integrations also require their own package documentation.
-
-## Package references for these examples
-
-- [Nuxt Auth Utils setup and session helpers](https://nuxt.com/modules/auth-utils)
-- [Nuxt UI setup](https://nuxt.com/modules/ui)
+- [Auth Utils: requirements and migration](https://github.com/atinux/nuxt-auth-utils#requirements)
+- [Nuxt UI: Nuxt installation](https://ui.nuxt.com/docs/getting-started/installation/nuxt)
+- [Pinia: Nuxt installation](https://pinia.vuejs.org/ssr/nuxt.html)
 
 [Back to course index](00-course-index.md)
